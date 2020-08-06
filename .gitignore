@@ -1,3 +1,7 @@
+# Project specific files
+token.json
+credentials.json
+
 # Logs
 logs
 *.log
