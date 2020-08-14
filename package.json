@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "googleapis": "^52.1.0"
+    "googleapis": "^52.1.0",
+    "moment-range": "^4.0.2",
+    "node-ical": "^0.11.3"
   }
 }

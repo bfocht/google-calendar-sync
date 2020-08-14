@@ -2,6 +2,12 @@ const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
 
+const ical = require('node-ical');
+
+const Moment = require('moment');
+const MomentRange = require('moment-range');
+const moment = MomentRange.extendMoment(Moment);
+
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/calendar',
                 'https://www.googleapis.com/auth/calendar.events'
@@ -79,60 +85,48 @@ function listEvents(auth, config) {
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(0,0,0,0);
 
-  //today.setDate(tomorrow.getDate())
-  //today.setHours(0,0,0,0);
-  tomorrow.setHours(23,0,0,0);
+  const range = moment.range(today, tomorrow);
 
-  calendar.events.list({
-    calendarId: config.calendarId,
-    timeMin: today.toISOString(),
-    timeMax: tomorrow.toISOString(),
-    maxResults: 10,
-    singleEvents: true,
-    orderBy: 'startTime',
-  }, (err, res) => {
+  ical.fromURL(config.calendarUrl, {}, function (err, events) {
     if (err) return console.log('The API returned an error: ' + err);
 
-    const events = res.data.items;
+    calendar.events.list({
+      calendarId: 'primary',
+      timeMin: today.toISOString(),
+      timeMax: tomorrow.toISOString(),
+      maxResults: 10,
+      singleEvents: true,
+      orderBy: 'startTime',
+    }, (err, res) => {
+      if (err) return console.log('The API returned an error: ' + err);
 
-    let count = 0;
+      const primaryEvents = res.data.items;
+      for (let k in events) {
+        if (events.hasOwnProperty(k)) {
+          const event = events[k];
+          if (event.type == 'VEVENT' && range.contains(event.start)) {
 
-    if (events.length) {
-      calendar.events.list({
-        calendarId: 'primary',
-        timeMin: today.toISOString(),
-        timeMax: tomorrow.toISOString(),
-        maxResults: 10,
-        singleEvents: true,
-        orderBy: 'startTime',
-      }, (err, res) => {
-        if (err) return console.log('The API returned an error: ' + err);
+            if (config.skipEvents.includes(event.summary)) return;
 
-        const primaryEvents = res.data.items;
+            if (primaryEvents.filter(pEvent => pEvent.summary === event.summary).length) return;
 
-        events.map((event, i) => {
-          if (config.skipEvents.includes(event.summary)) return;
+            const syncEvent = {
+              calendarId:'primary',
+              resource: {
+                end: event.end,
+                start: event.start,
+                summary: event.summary,
+                colorId: 8
+              }
+            };
 
-          if (primaryEvents.filter(pEvent => pEvent.summary === event.summary).length) return;
-
-          const syncEvent = {
-            calendarId:'primary',
-            resource: {
-              end: event.end,
-              start: event.start,
-              summary: event.summary,
-              colorId: 8
-            }
-          };
-
-          calendar.events.insert(syncEvent, (err) => {
-            if (err) return console.log('The API returned an error: ' + err);
-            console.log('Event created');
-          });
-        });
-      });
-    } else {
-      console.log('No upcoming events found.');
-    }
+            calendar.events.insert(syncEvent, (err) => {
+              if (err) return console.log('The API returned an error: ' + err);
+              console.log('Event created');
+            });
+          }
+        }
+      }
+    });
   });
 }
