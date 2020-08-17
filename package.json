@@ -4,13 +4,13 @@
   "description": "copy events from shared calendar to default calendar",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ."
   },
-  "author": "",
+  "author": "Bryan Focht",
   "license": "ISC",
   "dependencies": {
     "googleapis": "^52.1.0",
-    "moment-range": "^4.0.2",
-    "node-ical": "^0.11.3"
+    "ical-expander": "^3.0.0",
+    "node-fetch": "^2.6.0"
   }
 }

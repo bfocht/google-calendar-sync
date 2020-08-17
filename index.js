@@ -2,11 +2,8 @@ const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
 
-const ical = require('node-ical');
-
-const Moment = require('moment');
-const MomentRange = require('moment-range');
-const moment = MomentRange.extendMoment(Moment);
+const fetch = require('node-fetch');
+const IcalExpander = require('ical-expander');
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/calendar',
@@ -80,20 +77,25 @@ function getAccessToken(oAuth2Client, callback) {
  */
 function listEvents(auth, config) {
   const calendar = google.calendar({version: 'v3', auth});
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0,0,0,0);
+  const startDateTime = new Date();
+  startDateTime.setHours(0,0,0,0);
+  const endDateTime = new Date()
+  endDateTime.setDate(endDateTime.getDate() + 1);
+  endDateTime.setHours(0,0,0,0);
 
-  const range = moment.range(today, tomorrow);
+  fetch(config.calendarUrl).then(res => res.text()).then(ics => {
 
-  ical.fromURL(config.calendarUrl, {}, function (err, events) {
-    if (err) return console.log('The API returned an error: ' + err);
+    const icalExpander = new IcalExpander({ ics, maxIterations: 100 });
+    const events = icalExpander.between(startDateTime, endDateTime);
+
+    const mappedEvents = events.events.map(e => ({ startDate: e.startDate, summary: e.summary, endDate: e.endDate }));
+    const mappedOccurrences = events.occurrences.map(o => ({ startDate: o.startDate, summary: o.item.summary, endDate: o.endDate }));
+    const allEvents = [].concat(mappedEvents, mappedOccurrences);
 
     calendar.events.list({
       calendarId: 'primary',
-      timeMin: today.toISOString(),
-      timeMax: tomorrow.toISOString(),
+      timeMin: startDateTime.toISOString(),
+      timeMax: endDateTime.toISOString(),
       maxResults: 10,
       singleEvents: true,
       orderBy: 'startTime',
@@ -101,32 +103,27 @@ function listEvents(auth, config) {
       if (err) return console.log('The API returned an error: ' + err);
 
       const primaryEvents = res.data.items;
-      for (let k in events) {
-        if (events.hasOwnProperty(k)) {
-          const event = events[k];
-          if (event.type == 'VEVENT' && range.contains(event.start)) {
+      allEvents.map(event => {
 
-            if (config.skipEvents.includes(event.summary)) return;
+        if (config.skipEvents.filter(item => item == event.summary).length) return;
 
-            if (primaryEvents.filter(pEvent => pEvent.summary === event.summary).length) return;
+        if (primaryEvents.filter(pEvent => pEvent.summary == event.summary).length) return;
 
-            const syncEvent = {
-              calendarId:'primary',
-              resource: {
-                end: event.end,
-                start: event.start,
-                summary: event.summary,
-                colorId: 8
-              }
-            };
-
-            calendar.events.insert(syncEvent, (err) => {
-              if (err) return console.log('The API returned an error: ' + err);
-              console.log('Event created');
-            });
+        const syncEvent = {
+          calendarId:'primary',
+          resource: {
+            end: { dateTime: event.endDate.toISOString(), timeZone: event.endDate.zone.tzid },
+            start: { dateTime: event.startDate.toISOString(), timeZone: event.startDate.zone.tzid },
+            summary: event.summary,
+            colorId: 8
           }
-        }
-      }
+        };
+
+        calendar.events.insert(syncEvent, (err) => {
+          if (err) return console.log('The API returned an error: ' + err);
+          console.log('Event created');
+        });
+      });
     });
   });
 }
