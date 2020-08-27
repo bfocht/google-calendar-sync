@@ -138,6 +138,8 @@ function syncEvents(auth, config) {
 
           if (primaryEvents.filter(pEvent => pEvent.summary == event.summary).length) return;
 
+          if (event.summary.startsWith('Canceled')) return;
+
           const syncEvent = {
             calendarId:'primary',
             resource: {
