@@ -13,9 +13,10 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar',
 // created automatically when the authorization flow completes for the first
 // time.
 const TOKEN_PATH = 'token.json';
+const CONFIG_PATH ='credentials.json'
 
 // Load client secrets from a local file.
-fs.readFile('credentials.json', (err, content) => {
+fs.readFile(CONFIG_PATH, (err, content) => {
   if (err) return console.log('Error loading client secret file:', err);
   // Authorize a client with credentials, then call the Google Calendar API.
   authorize(JSON.parse(content), syncEvents);
@@ -71,6 +72,33 @@ function getAccessToken(oAuth2Client, callback) {
   });
 }
 
+function getSharedCalenderEvents(calendar, calendarId, startDateTime, endDateTime, callback) {
+  if (!calendarId) {
+    return callback(null, []);
+  }
+
+  return calendar.events.list({
+    calendarId,
+    timeMin: startDateTime.toISOString(),
+    timeMax: endDateTime.toISOString(),
+    maxResults: 10,
+    singleEvents: true,
+    orderBy: 'startTime',
+  }, (err, res) => {
+    if (err) return callback(err);
+
+    const sharedCalEvents = res.data.items.map(e =>({
+      start: e.start,
+      end: e.end,
+      summary: e.summary,
+      colorId: 11,
+      location: ''
+    }));
+    return callback(null, sharedCalEvents)
+
+  });
+}
+
 /**
  * Lists the next 10 events on the user's primary calendar.
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
@@ -83,23 +111,8 @@ function syncEvents(auth, config) {
   endDateTime.setDate(endDateTime.getDate() + 1);
   endDateTime.setHours(0,0,0,0);
 
-  calendar.events.list({
-    calendarId: config.sharedCalendarId,
-    timeMin: startDateTime.toISOString(),
-    timeMax: endDateTime.toISOString(),
-    maxResults: 10,
-    singleEvents: true,
-    orderBy: 'startTime',
-  }, (err, res) => {
+  getSharedCalenderEvents(calendar, config.sharedCalendarId, startDateTime, endDateTime, (err, sharedCalEvents) => {
     if (err) return console.log('The API returned an error: ' + err);
-
-    const sharedCalEvents = res.data.items.map(e =>({
-      start: e.start,
-      end: e.end,
-      summary: e.summary,
-      colorId: 11,
-      location: ''
-    }));
 
     fetch(config.icsCalendarUrl).then(res => res.text()).then(ics => {
       const icalExpander = new IcalExpander({ ics, maxIterations: 100 });
