@@ -129,7 +129,7 @@ const login = (loginName, password, callback ) => {
             };
             console.log('Posting response SAML....');
             request(LoginUrl, location, 'POST', headers, body, (err, authResponse) => {
-              console.log('received SAML Response...');
+              console.log('Logged in...');
               const cookie = processCookies(authResponse.webResponse);
               const finalCookie = combineCookies(loginCookie, cookie);
               return callback(null, finalCookie);
