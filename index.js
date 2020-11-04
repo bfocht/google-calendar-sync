@@ -145,6 +145,8 @@ const syncEvents = (auth, config) => {
         const allEvents = [].concat(mappedEvents, mappedOccurrences, sharedCalEvents);
         console.log(`${allEvents.length} events found...`);
 
+        endDateTime.setHours(7,0,0,0); //MST Offset
+
         calendar.events.list({
           calendarId: 'primary',
           timeMin: startDateTime.toISOString(),
