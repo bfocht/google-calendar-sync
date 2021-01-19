@@ -12,6 +12,6 @@
     "cheerio": "^1.0.0-rc.3",
     "googleapis": "^52.1.0",
     "ical-expander": "^3.0.0",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.1"
   }
 }
