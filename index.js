@@ -111,7 +111,7 @@ const syncEvents = (auth, config) => {
   const startDateTime = new Date();
   startDateTime.setHours(0,0,0,0);
   const endDateTime = new Date()
-  endDateTime.setDate(endDateTime.getDate() + 8);
+  endDateTime.setDate(endDateTime.getDate() + 1);
   endDateTime.setHours(0,0,0,0);
 
   getSharedCalenderEvents(calendar, config.sharedCalendarId, startDateTime, endDateTime, (err, sharedCalEvents) => {
@@ -130,7 +130,7 @@ const syncEvents = (auth, config) => {
           start: { dateTime: e.startDate.toJSDate().toISOString(), timeZone: e.startDate.zone.tzid },
           end: { dateTime: e.endDate.toJSDate().toISOString(), timeZone: e.endDate.zone.tzid },
           summary: e.summary,
-          location: 'Blackboard',
+          location: e.location,
           colorId: 8
         }));
 
@@ -138,7 +138,7 @@ const syncEvents = (auth, config) => {
           start: { dateTime: o.startDate.toJSDate().toISOString(), timeZone: o.startDate.zone.tzid },
           end: { dateTime: o.endDate.toJSDate().toISOString(), timeZone: o.endDate.zone.tzid },
           summary: o.item.summary,
-          location: 'Blackboard',
+          location: o.item.location,
           colorId: 8
         }));
 

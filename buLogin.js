@@ -68,6 +68,8 @@ const combineCookies = (cookie1, cookie2) => {
 }
 
 const login = (loginName, password, callback ) => {
+  if (!loginName || !password) return callback('empty login');
+
   loginName = encodeURIComponent(loginName);
   password = encodeURIComponent(password);
 
