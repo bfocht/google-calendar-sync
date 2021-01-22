@@ -111,7 +111,7 @@ const syncEvents = (auth, config) => {
   const startDateTime = new Date();
   startDateTime.setHours(0,0,0,0);
   const endDateTime = new Date()
-  endDateTime.setDate(endDateTime.getDate() + 1);
+  endDateTime.setDate(endDateTime.getDate() + config.syncDays);
   endDateTime.setHours(0,0,0,0);
 
   getSharedCalenderEvents(calendar, config.sharedCalendarId, startDateTime, endDateTime, (err, sharedCalEvents) => {
