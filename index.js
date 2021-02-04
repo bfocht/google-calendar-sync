@@ -164,7 +164,7 @@ const syncEvents = (auth, config) => {
 
             if (primaryEvents.filter(pEvent => pEvent.summary == event.summary).length) return;
 
-            if (event.summary.startsWith('Canceled')) return;
+            if (event.summary.startsWith('Canceled') || event.summary.startsWith('OOO')) return;
 
             const syncEvent = {
               calendarId:'primary',
