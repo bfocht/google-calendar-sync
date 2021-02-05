@@ -94,7 +94,6 @@ const getSharedCalenderEvents = (calendar, calendarId, startDateTime, endDateTim
       end: e.end,
       summary: e.summary,
       colorId: 11,
-      location: ''
     }));
     return callback(null, sharedCalEvents)
 
@@ -173,7 +172,7 @@ const syncEvents = (auth, config) => {
                 start: event.start,
                 summary: event.summary,
                 colorId: event.colorId,
-                location: event.location
+                location: event.location || config.location
               }
             };
 
