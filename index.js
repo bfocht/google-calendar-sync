@@ -142,9 +142,16 @@ const syncEvents = (auth, config) => {
         }));
 
         const allEvents = [].concat(mappedEvents, mappedOccurrences, sharedCalEvents);
-        console.log(`${allEvents.length} events found...`);
 
         endDateTime.setHours(7,0,0,0); //MST Offset
+
+        //dedupe events
+        const uniqueEvents = allEvents.filter((event, index, self) =>
+          index === self.findIndex((item) => (
+            item.summary === event.summary && item.start === event.start
+          ))
+        )
+        console.log(`${uniqueEvents.length} events found...`);
 
         calendar.events.list({
           calendarId: 'primary',
@@ -157,13 +164,13 @@ const syncEvents = (auth, config) => {
           if (err) return console.log('The API returned an error: ' + err);
 
           const primaryEvents = res.data.items;
-          allEvents.map(event => {
+          uniqueEvents.map(event => {
 
             if (config.skipEvents.filter(item => item == event.summary).length) return;
 
             if (primaryEvents.filter(pEvent => pEvent.summary == event.summary).length) return;
 
-            if (event.summary.startsWith('Canceled') || event.summary.startsWith('OOO')) return;
+            if (event.summary.startsWith('Canceled') || event.summary.toLowerCase().includes('ooo') || event.summary.toLowerCase().includes('out of office')) return;
 
             const syncEvent = {
               calendarId:'primary',
@@ -177,7 +184,7 @@ const syncEvents = (auth, config) => {
             };
 
             calendar.events.insert(syncEvent, (err) => {
-              if (err) return console.log('The API returned an error: ' + err);
+              if (err) return console.log('The API returned an error: ' + err, JSON.stringify(syncEvent));
               console.log('Event created');
             });
           });
