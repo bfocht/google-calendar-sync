@@ -148,9 +148,10 @@ const syncEvents = (auth, config) => {
         //dedupe events
         const uniqueEvents = allEvents.filter((event, index, self) =>
           index === self.findIndex((item) => (
-            item.summary === event.summary && item.start === event.start
+            item.summary == event.summary && item.start.dateTime == event.start.dateTime
           ))
         )
+
         console.log(`${uniqueEvents.length} events found...`);
 
         calendar.events.list({
