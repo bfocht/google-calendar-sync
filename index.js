@@ -108,10 +108,18 @@ const getSharedCalenderEvents = (calendar, calendarId, startDateTime, endDateTim
 const syncEvents = (auth, config) => {
   const calendar = google.calendar({version: 'v3', auth});
   const startDateTime = new Date();
-  startDateTime.setHours(0,0,0,0);
+  startDateTime.setHours(5,0,0,0); //MST Offset
   const endDateTime = new Date()
   endDateTime.setDate(endDateTime.getDate() + config.syncDays);
   endDateTime.setHours(0,0,0,0);
+
+
+  const fixTimeZone = (tzid) => {
+    if (tzid === 'floating') {
+      return 'America/Phoenix'
+    }
+    return tzid;
+  }
 
   getSharedCalenderEvents(calendar, config.sharedCalendarId, startDateTime, endDateTime, (err, sharedCalEvents) => {
     if (err) return console.log('The API returned an error: ' + err);
@@ -126,16 +134,16 @@ const syncEvents = (auth, config) => {
         const events = icalExpander.between(startDateTime, endDateTime);
 
         const mappedEvents = events.events.map(e => ({
-          start: { dateTime: e.startDate.toJSDate().toISOString(), timeZone: e.startDate.zone.tzid },
-          end: { dateTime: e.endDate.toJSDate().toISOString(), timeZone: e.endDate.zone.tzid },
+          start: { dateTime: e.startDate.toJSDate().toISOString(), timeZone: fixTimeZone(e.startDate.zone.tzid) },
+          end: { dateTime: e.endDate.toJSDate().toISOString(), timeZone: fixTimeZone(e.endDate.zone.tzid) },
           summary: e.summary,
           location: e.location,
           colorId: 8
         }));
 
         const mappedOccurrences = events.occurrences.map(o => ({
-          start: { dateTime: o.startDate.toJSDate().toISOString(), timeZone: o.startDate.zone.tzid },
-          end: { dateTime: o.endDate.toJSDate().toISOString(), timeZone: o.endDate.zone.tzid },
+          start: { dateTime: o.startDate.toJSDate().toISOString(), timeZone: fixTimeZone(o.startDate.zone.tzid) },
+          end: { dateTime: o.endDate.toJSDate().toISOString(), timeZone: fixTimeZone(o.endDate.zone.tzid) },
           summary: o.item.summary,
           location: o.item.location,
           colorId: 8
@@ -143,6 +151,7 @@ const syncEvents = (auth, config) => {
 
         const allEvents = [].concat(mappedEvents, mappedOccurrences, sharedCalEvents);
 
+        startDateTime.setHours(0,0,0,0); //MST Offset
         endDateTime.setHours(7,0,0,0); //MST Offset
 
         //dedupe events
@@ -167,11 +176,11 @@ const syncEvents = (auth, config) => {
           const primaryEvents = res.data.items;
           uniqueEvents.map(event => {
 
-            if (config.skipEvents.filter(item => item == event.summary).length) return;
+            if (config.skipEvents.filter(item => event.summary.toLowerCase().includes(item.toLowerCase())).length) return;
 
             if (primaryEvents.filter(pEvent => pEvent.summary == event.summary).length) return;
 
-            if (event.summary.startsWith('Canceled') || event.summary.toLowerCase().includes('ooo') || event.summary.toLowerCase().includes('out of office')) return;
+            if (event.summary.startsWith('Canceled')) return;
 
             const syncEvent = {
               calendarId:'primary',
