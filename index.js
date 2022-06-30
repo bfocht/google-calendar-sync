@@ -111,14 +111,25 @@ const syncEvents = (auth, config) => {
   startDateTime.setHours(5,0,0,0); //MST Offset
   const endDateTime = new Date()
   endDateTime.setDate(endDateTime.getDate() + config.syncDays);
-  endDateTime.setHours(0,0,0,0);
+  endDateTime.setHours(23,59,0,0);
 
 
-  const fixTimeZone = (tzid) => {
-    if (tzid === 'floating') {
-      return 'America/Phoenix'
+  const fixTimeZone = date => {
+    if (date.zone.tzid === 'floating') {
+      if (date.timezone === 'India Standard Time') {
+        const jsDate = date.toJSDate();
+        jsDate.setHours(jsDate.getHours() - 6);
+        jsDate.setMinutes(jsDate.getMinutes() + 30);
+        return { dateTime: jsDate.toISOString(), timeZone: 'America/Phoenix' };
+      }
+
+      const jsDate = date.toJSDate();
+      jsDate.setHours(jsDate.getHours() - 6);
+      jsDate.setMinutes(jsDate.getMinutes() + 30);
+      return { dateTime: jsDate.toISOString(), timeZone: 'America/Phoenix' };
     }
-    return tzid;
+
+    return { dateTime: date.toJSDate().toISOString(), timeZone: date.zone.tzid };
   }
 
   getSharedCalenderEvents(calendar, config.sharedCalendarId, startDateTime, endDateTime, (err, sharedCalEvents) => {
@@ -134,16 +145,16 @@ const syncEvents = (auth, config) => {
         const events = icalExpander.between(startDateTime, endDateTime);
 
         const mappedEvents = events.events.map(e => ({
-          start: { dateTime: e.startDate.toJSDate().toISOString(), timeZone: fixTimeZone(e.startDate.zone.tzid) },
-          end: { dateTime: e.endDate.toJSDate().toISOString(), timeZone: fixTimeZone(e.endDate.zone.tzid) },
+          start: fixTimeZone(e.startDate),
+          end: fixTimeZone(e.endDate),
           summary: e.summary,
           location: e.location,
           colorId: 8
         }));
 
         const mappedOccurrences = events.occurrences.map(o => ({
-          start: { dateTime: o.startDate.toJSDate().toISOString(), timeZone: fixTimeZone(o.startDate.zone.tzid) },
-          end: { dateTime: o.endDate.toJSDate().toISOString(), timeZone: fixTimeZone(o.endDate.zone.tzid) },
+          start: fixTimeZone(o.startDate),
+          end: fixTimeZone(o.endDate),
           summary: o.item.summary,
           location: o.item.location,
           colorId: 8
@@ -154,12 +165,18 @@ const syncEvents = (auth, config) => {
         startDateTime.setHours(0,0,0,0); //MST Offset
         endDateTime.setHours(7,0,0,0); //MST Offset
 
+        //limit events to endDate
+        const limitEvents = allEvents.filter((event, index, self) => {
+          const startDate = new Date(event.start.dateTime).getTime();
+          return startDate > startDateTime.getTime() && startDate < endDateTime.getTime()
+        });
+
         //dedupe events
-        const uniqueEvents = allEvents.filter((event, index, self) =>
-          index === self.findIndex((item) => (
+        const uniqueEvents = limitEvents.filter((event, index, self) =>
+          index === self.findIndex(item => (
             item.summary == event.summary && item.start.dateTime == event.start.dateTime
           ))
-        )
+        );
 
         console.log(`${uniqueEvents.length} events found...`);
 
