@@ -113,6 +113,11 @@ const syncEvents = (auth, config) => {
   endDateTime.setDate(endDateTime.getDate() + config.syncDays);
   endDateTime.setHours(23,59,0,0);
 
+  const convertTimeZone = timeZone => {
+    if (timeZone === 'Pacific Standard Time') return 'America/Los_Angeles';
+    if (timeZone === 'US Mountain Standard Time') return 'America/Denver';
+    if (timeZone === 'Central Standard Time') return 'America/Chicago';
+  }
 
   const fixTimeZone = date => {
     if (date.zone.tzid === 'floating') {
@@ -129,7 +134,9 @@ const syncEvents = (auth, config) => {
       return { dateTime: jsDate.toISOString(), timeZone: 'America/Phoenix' };
     }
 
-    return { dateTime: date.toJSDate().toISOString(), timeZone: date.zone.tzid };
+    const tzid = convertTimeZone(date.zone.tzid);
+
+    return { dateTime: date.toJSDate().toISOString(), timeZone:  tzid};
   }
 
   getSharedCalenderEvents(calendar, config.sharedCalendarId, startDateTime, endDateTime, (err, sharedCalEvents) => {
@@ -191,7 +198,7 @@ const syncEvents = (auth, config) => {
           if (err) return console.log('The API returned an error: ' + err);
 
           const primaryEvents = res.data.items;
-          uniqueEvents.map(event => {
+          uniqueEvents.map((event, index) => {
 
             if (config.skipEvents.filter(item => event.summary.toLowerCase().includes(item.toLowerCase())).length) return;
 
@@ -210,10 +217,13 @@ const syncEvents = (auth, config) => {
               }
             };
 
-            calendar.events.insert(syncEvent, (err) => {
-              if (err) return console.log('The API returned an error: ' + err, JSON.stringify(syncEvent));
-              console.log('Event created');
-            });
+            //rate limiting
+            setTimeout(() => {
+              calendar.events.insert(syncEvent, (err) => {
+                if (err) return console.log('The API returned an error: ' + err, JSON.stringify(syncEvent));
+                console.log('Event created');
+              });
+            }, 1500*index);
           });
         });
       });
