@@ -117,6 +117,7 @@ const syncEvents = (auth, config) => {
     if (timeZone === 'Pacific Standard Time') return 'America/Los_Angeles';
     if (timeZone === 'US Mountain Standard Time') return 'America/Denver';
     if (timeZone === 'Central Standard Time') return 'America/Chicago';
+    return 'America/Phoenix';
   }
 
   const fixTimeZone = date => {
