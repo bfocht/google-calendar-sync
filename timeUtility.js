@@ -8,13 +8,6 @@ const convertTimeZone = timeZone => {
 
 const fixTimeZone = date => {
   if (date.zone.tzid === 'floating') {
-    if (date.timezone === 'India Standard Time') {
-      const jsDate = date.toJSDate();
-      jsDate.setHours(jsDate.getHours() - 6);
-      jsDate.setMinutes(jsDate.getMinutes() + 30);
-      return { dateTime: jsDate.toISOString(), timeZone: 'America/Phoenix' };
-    }
-
     const jsDate = date.toJSDate();
     jsDate.setHours(jsDate.getHours() - 6);
     jsDate.setMinutes(jsDate.getMinutes() + 30);

@@ -200,8 +200,7 @@ const syncEvents = (auth, config) => {
             }
           };
 
-          console.log(syncEvent);
-          //rate limiting
+          //update with rate limiting
           setTimeout(() => {
             calendar.events.update(syncEvent, (err) => {
               if (err) return console.log('The API returned an error: ' + err, JSON.stringify(syncEvent));
