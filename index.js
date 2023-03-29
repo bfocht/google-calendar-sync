@@ -5,7 +5,7 @@ const {google} = require('googleapis');
 const fetch = require('node-fetch');
 const IcalExpander = require('ical-expander');
 
-const {login} = require('./buLogin');
+const utility = require('./timeUtility')
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/calendar',
@@ -16,6 +16,8 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar',
 // time.
 const TOKEN_PATH = 'token.json';
 const CONFIG_PATH ='credentials.json'
+
+const COLOR_ID = 8;
 
 // Load client secrets from a local file.
 fs.readFile(CONFIG_PATH, (err, content) => {
@@ -33,7 +35,7 @@ fs.readFile(CONFIG_PATH, (err, content) => {
 const authorize = (credentials, callback) => {
   const {client_secret, client_id, redirect_uris} = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
-      client_id, client_secret, redirect_uris[0]);
+      client_id, client_secret, redirect_uris[1]);
 
   // Check if we have previously stored a token.
   fs.readFile(TOKEN_PATH, (err, token) => {
@@ -74,6 +76,13 @@ const getAccessToken = (oAuth2Client, callback) => {
   });
 }
 
+/**
+ * Get events of the user's primary calendar.
+ * @param {google.calendar} google calendar
+ * @param {calendarId} id of the calendar to use
+ * @param {startDateTime}
+ * @param {endDateTime}
+ */
 const getSharedCalenderEvents = (calendar, calendarId, startDateTime, endDateTime, callback) => {
   if (!calendarId) {
     return callback(null, []);
@@ -93,7 +102,7 @@ const getSharedCalenderEvents = (calendar, calendarId, startDateTime, endDateTim
       start: e.start,
       end: e.end,
       summary: e.summary,
-      colorId: 11,
+      colorId: COLOR_ID,
     }));
     return callback(null, sharedCalEvents)
 
@@ -106,6 +115,8 @@ const getSharedCalenderEvents = (calendar, calendarId, startDateTime, endDateTim
  * @param {config} config settings
  */
 const syncEvents = (auth, config) => {
+  if (!config) return;
+
   const calendar = google.calendar({version: 'v3', auth});
   const startDateTime = new Date();
   startDateTime.setHours(5,0,0,0); //MST Offset
@@ -113,119 +124,118 @@ const syncEvents = (auth, config) => {
   endDateTime.setDate(endDateTime.getDate() + config.syncDays);
   endDateTime.setHours(23,59,0,0);
 
-  const convertTimeZone = timeZone => {
-    if (timeZone === 'Pacific Standard Time') return 'America/Los_Angeles';
-    if (timeZone === 'US Mountain Standard Time') return 'America/Denver';
-    if (timeZone === 'Central Standard Time') return 'America/Chicago';
-    return 'America/Phoenix';
-  }
-
-  const fixTimeZone = date => {
-    if (date.zone.tzid === 'floating') {
-      if (date.timezone === 'India Standard Time') {
-        const jsDate = date.toJSDate();
-        jsDate.setHours(jsDate.getHours() - 6);
-        jsDate.setMinutes(jsDate.getMinutes() + 30);
-        return { dateTime: jsDate.toISOString(), timeZone: 'America/Phoenix' };
-      }
-
-      const jsDate = date.toJSDate();
-      jsDate.setHours(jsDate.getHours() - 6);
-      jsDate.setMinutes(jsDate.getMinutes() + 30);
-      return { dateTime: jsDate.toISOString(), timeZone: 'America/Phoenix' };
-    }
-
-    const tzid = convertTimeZone(date.zone.tzid);
-
-    return { dateTime: date.toJSDate().toISOString(), timeZone:  tzid};
-  }
-
   getSharedCalenderEvents(calendar, config.sharedCalendarId, startDateTime, endDateTime, (err, sharedCalEvents) => {
     if (err) return console.log('The API returned an error: ' + err);
 
-    login(config.icsCalendarLogin, config.icsCalendarPassword, (err, cookie) => {
-      const options = {
-        headers: { cookie }
-      };
-      console.log('Downloading ics file...')
-      fetch(config.icsCalendarUrl, options).then(res => res.text()).then(ics => {
-        const icalExpander = new IcalExpander({ ics, maxIterations: 100 });
-        const events = icalExpander.between(startDateTime, endDateTime);
+    console.log('Downloading ics file...')
+    fetch(config.icsCalendarUrl).then(res => res.text()).then(ics => {
+      const icalExpander = new IcalExpander({ ics, maxIterations: 100 });
+      const events = icalExpander.between(startDateTime, endDateTime);
 
-        const mappedEvents = events.events.map(e => ({
-          start: fixTimeZone(e.startDate),
-          end: fixTimeZone(e.endDate),
-          summary: e.summary,
-          location: e.location,
-          colorId: 8
-        }));
+      const mappedEvents = events.events.map(e => ({
+        start: utility.fixTimeZone(e.startDate),
+        end: utility.fixTimeZone(e.endDate),
+        summary: e.summary,
+        location: e.location,
+        colorId: COLOR_ID
+      }));
 
-        const mappedOccurrences = events.occurrences.map(o => ({
-          start: fixTimeZone(o.startDate),
-          end: fixTimeZone(o.endDate),
-          summary: o.item.summary,
-          location: o.item.location,
-          colorId: 8
-        }));
+      const mappedOccurrences = events.occurrences.map(o => ({
+        start: utility.fixTimeZone(o.startDate),
+        end: utility.fixTimeZone(o.endDate),
+        summary: o.item.summary,
+        location: o.item.location,
+        colorId: COLOR_ID
+      }));
 
-        const allEvents = [].concat(mappedEvents, mappedOccurrences, sharedCalEvents);
+      const allEvents = [].concat(mappedEvents, mappedOccurrences, sharedCalEvents);
 
-        startDateTime.setHours(0,0,0,0); //MST Offset
-        endDateTime.setHours(7,0,0,0); //MST Offset
+      startDateTime.setHours(0,0,0,0); //MST Offset
+      endDateTime.setHours(7,0,0,0); //MST Offset
 
-        //limit events to endDate
-        const limitEvents = allEvents.filter((event, index, self) => {
-          const startDate = new Date(event.start.dateTime).getTime();
-          return startDate > startDateTime.getTime() && startDate < endDateTime.getTime()
+      //limit events to endDate
+      const limitEvents = allEvents.filter((event, index, self) => {
+        const startDate = new Date(event.start.dateTime).getTime();
+        return startDate > startDateTime.getTime() && startDate < endDateTime.getTime()
+      });
+
+      //dedupe events
+      const uniqueEvents = limitEvents.filter((event, index, self) =>
+        index === self.findIndex(item => (
+          item.summary == event.summary && item.start.dateTime == event.start.dateTime
+        ))
+      );
+
+      console.log(`${uniqueEvents.length} events found...`);
+
+      //add new calendar events
+      calendar.events.list({
+        calendarId: 'primary',
+        timeMin: startDateTime.toISOString(),
+        timeMax: endDateTime.toISOString(),
+        maxResults: 30,
+        singleEvents: true,
+        orderBy: 'startTime',
+      }, (err, res) => {
+        if (err) return console.log('The API returned an error: ' + err);
+
+        const primaryEvents = res.data.items;
+
+        //cancel events
+        primaryEvents.map( (event, index) => {
+          if (event.summary.startsWith('Canceled')) return;
+          if (event.colorId != COLOR_ID) return;
+
+          if (uniqueEvents.filter(uEvent => uEvent.summary == event.summary).length) return;
+
+          const syncEvent = {
+            calendarId:'primary',
+            eventId: event.id,
+            resource: {
+              end: event.end,
+              start: event.start,
+              summary: 'Canceled: '+event.summary,
+              colorId: event.colorId,
+              location: event.location || config.location
+            }
+          };
+
+          console.log(syncEvent);
+          //rate limiting
+          setTimeout(() => {
+            calendar.events.update(syncEvent, (err) => {
+              if (err) return console.log('The API returned an error: ' + err, JSON.stringify(syncEvent));
+              console.log('Event updated');
+            });
+          }, 1500*index);
         });
 
-        //dedupe events
-        const uniqueEvents = limitEvents.filter((event, index, self) =>
-          index === self.findIndex(item => (
-            item.summary == event.summary && item.start.dateTime == event.start.dateTime
-          ))
-        );
+        uniqueEvents.map((event, index) => {
 
-        console.log(`${uniqueEvents.length} events found...`);
+          if (config.skipEvents.filter(item => event.summary.toLowerCase().includes(item.toLowerCase())).length) return;
 
-        calendar.events.list({
-          calendarId: 'primary',
-          timeMin: startDateTime.toISOString(),
-          timeMax: endDateTime.toISOString(),
-          maxResults: 30,
-          singleEvents: true,
-          orderBy: 'startTime',
-        }, (err, res) => {
-          if (err) return console.log('The API returned an error: ' + err);
+          if (primaryEvents.filter(pEvent => pEvent.summary == event.summary).length) return;
 
-          const primaryEvents = res.data.items;
-          uniqueEvents.map((event, index) => {
+          if (event.summary.startsWith('Canceled')) return;
 
-            if (config.skipEvents.filter(item => event.summary.toLowerCase().includes(item.toLowerCase())).length) return;
+          const syncEvent = {
+            calendarId:'primary',
+            resource: {
+              end: event.end,
+              start: event.start,
+              summary: event.summary,
+              colorId: event.colorId,
+              location: event.location || config.location
+            }
+          };
 
-            if (primaryEvents.filter(pEvent => pEvent.summary == event.summary).length) return;
-
-            if (event.summary.startsWith('Canceled')) return;
-
-            const syncEvent = {
-              calendarId:'primary',
-              resource: {
-                end: event.end,
-                start: event.start,
-                summary: event.summary,
-                colorId: event.colorId,
-                location: event.location || config.location
-              }
-            };
-
-            //rate limiting
-            setTimeout(() => {
-              calendar.events.insert(syncEvent, (err) => {
-                if (err) return console.log('The API returned an error: ' + err, JSON.stringify(syncEvent));
-                console.log('Event created');
-              });
-            }, 1500*index);
-          });
+          //rate limiting
+          setTimeout(() => {
+            calendar.events.insert(syncEvent, (err) => {
+              if (err) return console.log('The API returned an error: ' + err, JSON.stringify(syncEvent));
+              console.log('Event created');
+            });
+          }, 1500*index);
         });
       });
     });
