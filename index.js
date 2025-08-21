@@ -128,7 +128,12 @@ const syncEvents = (auth, config) => {
     if (err) return console.log('The API returned an error: ' + err);
 
     console.log('Downloading ics file...')
-    fetch(config.icsCalendarUrl).then(res => res.text()).then(ics => {
+    fetch(config.icsCalendarUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'text/calendar,text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+      }
+    }).then(res => res.text()).then(ics => {
       const icalExpander = new IcalExpander({ ics, maxIterations: 100 });
       const events = icalExpander.between(startDateTime, endDateTime);
 
