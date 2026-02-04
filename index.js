@@ -19,11 +19,20 @@ const CONFIG_PATH ='credentials.json'
 
 const COLOR_ID = 8;
 
+// Read syncDays from command line arguments
+const syncDays = process.argv[2] ? parseInt(process.argv[2]) : null;
+
+if (!syncDays || isNaN(syncDays)) {
+  console.log('Usage: node index.js <syncDays>');
+  console.log('Example: node index.js 7');
+  process.exit(1);
+}
+
 // Load client secrets from a local file.
 fs.readFile(CONFIG_PATH, (err, content) => {
   if (err) return console.log('Error loading client secret file:', err);
   // Authorize a client with credentials, then call the Google Calendar API.
-  authorize(JSON.parse(content), syncEvents);
+  authorize(JSON.parse(content), (auth, config) => syncEvents(auth, config, syncDays));
 });
 
 /**
@@ -113,15 +122,16 @@ const getSharedCalenderEvents = (calendar, calendarId, startDateTime, endDateTim
  * Sync events to the user's primary calendar.
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
  * @param {config} config settings
+ * @param {number} syncDays Number of days to sync
  */
-const syncEvents = (auth, config) => {
+const syncEvents = (auth, config, syncDays) => {
   if (!config) return;
 
   const calendar = google.calendar({version: 'v3', auth});
   const startDateTime = new Date();
   startDateTime.setHours(5,0,0,0); //MST Offset
   const endDateTime = new Date()
-  endDateTime.setDate(endDateTime.getDate() + config.syncDays);
+  endDateTime.setDate(endDateTime.getDate() + syncDays);
   endDateTime.setHours(23,59,0,0);
 
   getSharedCalenderEvents(calendar, config.sharedCalendarId, startDateTime, endDateTime, (err, sharedCalEvents) => {

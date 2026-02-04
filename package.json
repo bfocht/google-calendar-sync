@@ -1,17 +1,23 @@
 {
-  "name": "google-calendar",
-  "version": "1.0.0",
-  "description": "copy events from shared calendar to default calendar",
+  "name": "second-brain",
+  "version": "2.0.0",
+  "description": "Second Brain: Calendar sync + AI-powered capture system",
   "main": "index.js",
   "scripts": {
-    "start": "node ."
+    "start": "node index.js",
+    "brain": "node src/index.js",
+    "daily": "node src/digests/daily.js",
+    "weekly": "node src/digests/weekly.js"
   },
   "author": "Bryan Focht",
   "license": "ISC",
   "dependencies": {
-    "cheerio": "^1.0.0-rc.3",
+    "@anthropic-ai/sdk": "^0.24.0",
+    "@notionhq/client": "^2.2.0",
+    "@slack/bolt": "^3.17.0",
     "googleapis": "^52.1.0",
     "ical-expander": "^3.0.0",
+    "node-cron": "^3.0.0",
     "node-fetch": "^2.6.1"
   }
 }
