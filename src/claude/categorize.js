@@ -1,23 +1,4 @@
-const Anthropic = require('@anthropic-ai/sdk');
-const { getAnthropicConfig } = require('../config');
-
-let anthropicClient = null;
-let anthropicModel = null;
-
-const getClient = () => {
-  if (anthropicClient) return anthropicClient;
-  const config = getAnthropicConfig();
-  anthropicClient = new Anthropic({ apiKey: config.apiKey });
-  anthropicModel = config.model || 'claude-3-haiku-20240307';
-  return anthropicClient;
-};
-
-const getModel = () => {
-  if (!anthropicModel) {
-    getClient(); // Initialize model from config
-  }
-  return anthropicModel;
-};
+const { createMessage, getModel } = require('../llm/client');
 
 const CATEGORIZATION_PROMPT = `INPUT:
 {{INPUT}}
@@ -109,12 +90,11 @@ RULES:
 - Always return valid JSON with no markdown formatting`;
 
 const categorizeMessage = async (text) => {
-  const client = getClient();
   const prompt = CATEGORIZATION_PROMPT.replace('{{INPUT}}', text);
 
-  const response = await client.messages.create({
+  const response = await createMessage({
     model: getModel(),
-    max_tokens: 1024,
+    maxTokens: 1024,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -208,15 +188,14 @@ For ADMIN:
 }`;
 
 const reclassifyMessage = async (text, newCategory, currentStatus) => {
-  const client = getClient();
   const prompt = RECLASSIFICATION_PROMPT
     .replace(/{{CATEGORY}}/g, newCategory)
     .replace('{{TEXT}}', text)
     .replace('{{STATUS}}', currentStatus || 'active');
 
-  const response = await client.messages.create({
+  const response = await createMessage({
     model: getModel(),
-    max_tokens: 1024,
+    maxTokens: 1024,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -261,15 +240,14 @@ RULES:
 - Don't add explanations or commentary outside the format`;
 
 const generateDailyDigest = async (context) => {
-  const client = getClient();
   const date = new Date().toLocaleString('sv-SE', { timeZone: 'America/Phoenix' }).split(' ')[0];
   const prompt = DAILY_DIGEST_PROMPT
     .replace('{{CONTEXT}}', context)
     .replace('{{DATE}}', date);
 
-  const response = await client.messages.create({
+  const response = await createMessage({
     model: getModel(),
-    max_tokens: 1024,
+    maxTokens: 1024,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -307,15 +285,14 @@ RULES:
 - Always return valid JSON with no markdown formatting`;
 
 const generateDailyDigestStructured = async (context) => {
-  const client = getClient();
   const date = new Date().toLocaleString('sv-SE', { timeZone: 'America/Phoenix' }).split(' ')[0];
   const prompt = DAILY_DIGEST_STRUCTURED_PROMPT
     .replace('{{CONTEXT}}', context)
     .replace('{{DATE}}', date);
 
-  const response = await client.messages.create({
+  const response = await createMessage({
     model: getModel(),
-    max_tokens: 1024,
+    maxTokens: 1024,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -417,14 +394,13 @@ RULES:
 - Keep language concise and actionable`;
 
 const generateWeeklyDigest = async (context, totalCaptures) => {
-  const client = getClient();
   const prompt = WEEKLY_DIGEST_PROMPT
     .replace('{{CONTEXT}}', context)
     .replace('{{TOTAL_CAPTURES}}', totalCaptures.toString());
 
-  const response = await client.messages.create({
+  const response = await createMessage({
     model: getModel(),
-    max_tokens: 1024,
+    maxTokens: 1024,
     messages: [{ role: 'user', content: prompt }]
   });
 

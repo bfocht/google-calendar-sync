@@ -6,10 +6,8 @@ let dailyJob = null;
 let weeklyJob = null;
 
 const startScheduler = () => {
-  // Daily digest at 5:00 AM Phoenix time
-  // Cron uses server time, so we set this directly
-  // On a Phoenix-timezone server, this is straightforward
-  dailyJob = cron.schedule('0 5 * * *', async () => {
+  // Daily digest at 5:00 AM Phoenix time, weekdays only (Mon-Fri)
+  dailyJob = cron.schedule('0 5 * * 1-5', async () => {
     console.log('Running scheduled daily digest...');
     try {
       await runDailyDigest();
@@ -33,7 +31,7 @@ const startScheduler = () => {
   });
 
   console.log('Scheduler started:');
-  console.log('  - Daily digest: 5:00 AM Phoenix time');
+  console.log('  - Daily digest: 5:00 AM Phoenix time (Mon-Fri)');
   console.log('  - Weekly digest: Saturday 5:00 PM Phoenix time');
 };
 

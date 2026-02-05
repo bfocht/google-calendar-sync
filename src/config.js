@@ -47,11 +47,20 @@ const getAnthropicConfig = () => {
   return cfg.anthropic;
 };
 
+const getLLMConfig = () => {
+  const cfg = loadConfig();
+  if (!cfg.llm) {
+    throw new Error('LLM configuration not found in credentials.json');
+  }
+  return cfg.llm;
+};
+
 module.exports = {
   loadConfig,
   getGoogleCredentials,
   getCalendarConfig,
   getSlackConfig,
   getNotionConfig,
-  getAnthropicConfig
+  getAnthropicConfig,
+  getLLMConfig
 };

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is a Google Calendar synchronization application that copies events from Outlook or Google shared calendars to a user's primary Google Calendar. It also includes Zapier automation workflows for a "Second Brain" system.
+This is a Google Calendar synchronization application that copies events from Outlook or Google shared calendars to a user's primary Google Calendar.
 
 ## Setup and Configuration
 
@@ -75,10 +75,6 @@ npm start
 8. Check existing primary calendar events
 9. Cancel events no longer in source
 10. Insert new events with rate limiting
-
-### Zapier Workflows (zaps/ directory)
-
-The `zaps/` directory contains Zapier automation configurations for a "Second Brain" system that processes Slack messages and categorizes them into Notion databases:
 
 - **capture.json**: Main workflow that reads Slack messages, uses Claude AI to categorize them (people/projects/ideas/admin), and files them into appropriate Notion databases
 - **daily digest.json**: Daily summary workflow

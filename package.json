@@ -14,10 +14,11 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.0",
     "@notionhq/client": "^2.2.0",
-    "@slack/bolt": "^3.17.0",
+    "@slack/bolt": "^4.1.0",
     "googleapis": "^52.1.0",
     "ical-expander": "^3.0.0",
     "node-cron": "^3.0.0",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^2.6.1",
+    "openai": "^4.67.0"
   }
 }
