@@ -65,6 +65,22 @@ const getSecondaryClient = () => {
   return secondaryClient;
 };
 
+const checkPrimaryHealth = async (baseUrl, timeout = 30000) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(`${baseUrl}/health/liveliness`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    return false;
+  }
+};
+
 const shouldFallback = (error) => {
   // Network errors
   if (error.code && FALLBACK_ERRORS.includes(error.code)) {
@@ -151,17 +167,28 @@ const createMessage = async ({ model, maxTokens, messages }) => {
     return callSecondary({ model, maxTokens, messages });
   }
 
-  // Try primary first
+  // Health check before attempting primary
+  const isHealthy = await checkPrimaryHealth(
+    cfg.primary.baseUrl,
+    cfg.primary.healthCheckTimeout || 30000
+  );
+
+  if (!isHealthy) {
+    console.log('Primary LLM health check failed, falling back to secondary');
+    if (cfg.fallbackEnabled && cfg.secondary) {
+      return callSecondary({ model, maxTokens, messages });
+    }
+    throw new Error('Primary LLM unavailable and no fallback configured');
+  }
+
+  // Try primary
   try {
     return await callPrimary({ model, maxTokens, messages });
   } catch (error) {
-    // Check if we should fallback
     if (cfg.fallbackEnabled && cfg.secondary && shouldFallback(error)) {
       console.log(`Primary LLM failed (${error.code || error.status || error.message}), falling back to secondary`);
       return callSecondary({ model, maxTokens, messages });
     }
-
-    // Re-throw if fallback not enabled or not a fallback-worthy error
     throw error;
   }
 };
