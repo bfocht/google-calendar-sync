@@ -10,10 +10,13 @@ const createTask = async ({ title, notes, due }) => {
   const auth = await authorize();
   const tasks = google.tasks({ version: 'v1', auth });
 
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+
   const task = {
     title,
     notes,
-    due: due ? new Date(due).toISOString() : undefined
+    due: due ? new Date(due).toISOString() : date.toISOString()
   };
 
   return new Promise((resolve, reject) => {
@@ -34,15 +37,12 @@ const createTask = async ({ title, notes, due }) => {
 const createDailyTasks = async (actions) => {
   const results = [];
 
-  // Get today's date in YYYY-MM-DD format for Phoenix timezone
-  const today = new Date().toLocaleString('sv-SE', { timeZone: 'America/Phoenix' }).split(' ')[0];
-
   for (const action of actions) {
     try {
       const result = await createTask({
         title: action.title,
         notes: action.notes || '',
-        due: today
+        due: action.due || null
       });
       results.push(result);
       console.log(`Created task: ${action.title}`);

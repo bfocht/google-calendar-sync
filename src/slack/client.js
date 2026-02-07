@@ -10,7 +10,10 @@ const getApp = () => {
   app = new App({
     token: config.botToken,
     appToken: config.appToken,
-    socketMode: true
+    socketMode: true,
+    socketModeOptions: {
+      clientPingTimeout: 15000,  // Increase from 5000ms to 15000ms
+    }
   });
 
   return app;

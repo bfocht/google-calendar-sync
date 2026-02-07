@@ -8,7 +8,7 @@ INSTRUCTIONS:
    - "people" - information about a person, relationship update, something someone said
    - "projects" - a project, task with multiple steps, ongoing work
    - "ideas" - a thought, insight, concept, something to explore later
-   - "admin" - a simple errand, one-off task, something with a due date
+   - "admin" - a simple errand, one-off task, something with a due date, or a reminder
 
 2. Extract the relevant fields based on category
 
@@ -65,8 +65,8 @@ For ADMIN:
   "confidence": 0.85,
   "data": {
     "name": "Task name",
-    "due_date": "2024-01-15 or null if not specified",
-    "notes": "Additional context"
+    "due_date": "2026-01-15 or null if not specified",
+    "notes": "Additional context and details to follow up on"
   }
 }
 
@@ -182,8 +182,8 @@ For ADMIN:
   "destination": "admin",
   "data": {
     "name": "Task name",
-    "due_date": "2024-01-15 or null if not specified",
-    "notes": "Additional context"
+    "due_date": "2026-01-15 or null if not specified",
+    "notes": "Additional context and details to follow up on"
   }
 }`;
 
