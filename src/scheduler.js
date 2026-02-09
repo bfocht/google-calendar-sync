@@ -18,8 +18,8 @@ const startScheduler = () => {
     timezone: 'America/Phoenix'
   });
 
-  // Weekly digest at 5:00 PM on Saturday (day 6)
-  weeklyJob = cron.schedule('0 17 * * 6', async () => {
+  // Weekly digest at 5:00 PM on Sunday (day 0)
+  weeklyJob = cron.schedule('0 17 * * 0', async () => {
     console.log('Running scheduled weekly digest...');
     try {
       await runWeeklyDigest();
@@ -32,7 +32,7 @@ const startScheduler = () => {
 
   console.log('Scheduler started:');
   console.log('  - Daily digest: 5:00 AM Phoenix time (Mon-Fri)');
-  console.log('  - Weekly digest: Saturday 5:00 PM Phoenix time');
+  console.log('  - Weekly digest: Sunday 5:00 PM Phoenix time');
 };
 
 const stopScheduler = () => {

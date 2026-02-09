@@ -5,6 +5,26 @@ const RATE_LIMIT_MS = 500;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// List existing incomplete tasks from default task list
+const listTasks = async () => {
+  const auth = await authorize();
+  const tasks = google.tasks({ version: 'v1', auth });
+
+  return new Promise((resolve, reject) => {
+    tasks.tasks.list({
+      tasklist: '@default',
+      showCompleted: false,
+      showHidden: false
+    }, (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result.data.items || []);
+      }
+    });
+  });
+};
+
 // Create a single Google Task
 const createTask = async ({ title, notes, due }) => {
   const auth = await authorize();
@@ -62,5 +82,6 @@ const createDailyTasks = async (actions) => {
 
 module.exports = {
   createTask,
-  createDailyTasks
+  createDailyTasks,
+  listTasks
 };

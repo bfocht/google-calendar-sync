@@ -258,6 +258,8 @@ const DAILY_DIGEST_STRUCTURED_PROMPT = `You are a personal productivity assistan
 
 {{CONTEXT}}
 
+{{EXISTING_TASKS}}
+
 TODAY'S DATE: {{DATE}}
 
 OUTPUT FORMAT (return ONLY this JSON, no other text):
@@ -277,6 +279,7 @@ OUTPUT FORMAT (return ONLY this JSON, no other text):
 RULES:
 - topActions must have exactly 3 items with specific, executable actions
 - "Work on website" is bad. "Email Sarah to confirm deadline" is good
+- Do NOT suggest actions that duplicate or overlap with EXISTING TASKS
 - If nothing for peopleToConnect, use empty array []
 - If nothing to watch out for, use null
 - If no small win to note, use null
@@ -284,11 +287,18 @@ RULES:
 - Keep notes brief (under 100 characters)
 - Always return valid JSON with no markdown formatting`;
 
-const generateDailyDigestStructured = async (context) => {
+const generateDailyDigestStructured = async (context, existingTasks = []) => {
   const date = new Date().toLocaleString('sv-SE', { timeZone: 'America/Phoenix' }).split(' ')[0];
+
+  // Format existing tasks for the prompt
+  const existingTasksText = existingTasks.length > 0
+    ? 'EXISTING TASKS (do not duplicate):\n' + existingTasks.map(t => `- ${t.title}`).join('\n')
+    : '';
+
   const prompt = DAILY_DIGEST_STRUCTURED_PROMPT
     .replace('{{CONTEXT}}', context)
-    .replace('{{DATE}}', date);
+    .replace('{{DATE}}', date)
+    .replace('{{EXISTING_TASKS}}', existingTasksText);
 
   const response = await createMessage({
     model: getModel(),
