@@ -30,12 +30,10 @@ const parseCorrection = (message) => {
   };
 
   const statuses = {
-    'Todo': ['todo', 'pending'],
-    'Active': ['active', 'started', 'progress'],
-    'Waiting': ['waiting'],
+    'Active': ['active', 'started', 'progress', 'todo', 'pending', 'unknown'],
+    'Waiting': ['waiting', 'someday'],
     'Blocked': ['blocked', 'block'],
-    'Someday': ['someday', 'unknown'],
-    'Done': ['done', 'finish', 'complete']
+    'Done': ['done', 'finish', 'finished', 'complete']
   };
 
   let newDestination = null;
@@ -114,6 +112,12 @@ const setupHandlers = () => {
     if (text.toLowerCase().startsWith('fix:') || text.toLowerCase().startsWith('update:')) {
       // Handle fix/update command
       await handleCorrection(message, say);
+      return;
+    }
+
+    // Handle "done" shortcut as equivalent to "update: done"
+    if (text.toLowerCase().trim() === 'done') {
+      await handleCorrection({ ...message, text: 'update: done' }, say);
       return;
     }
 
@@ -238,7 +242,7 @@ const handleCorrection = async (message, say) => {
       }
 
       // Get new classification from Claude
-      const reclassified = await reclassifyMessage(originalText, parsed.newDestination, 'active');
+      const reclassified = await reclassifyMessage(originalText, parsed.newDestination, 'Active');
 
       // Create new entry in destination database
       const destEntry = await createDestinationEntry(parsed.newDestination, reclassified);

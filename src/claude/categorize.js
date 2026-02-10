@@ -40,7 +40,7 @@ For PROJECTS:
   "confidence": 0.85,
   "data": {
     "name": "Project Name",
-    "status": "active",
+    "status": "Active",
     "next_action": "Specific next action to take",
     "notes": "Additional context",
     "tags": ["work"]
@@ -84,7 +84,7 @@ For UNCLEAR (confidence below 0.6):
 RULES:
 - "next_action" must be specific and executable. "Work on website" is bad. "Email Sarah to confirm deadline" is good.
 - If a person's name is mentioned, consider if this is really about that person or about a project/task involving them
-- Status options for projects: "active", "waiting", "blocked", "someday"
+- Status options for projects: "Active", "Waiting", "Blocked"
 - Extract dates when mentioned and format as YYYY-MM-DD
 - If no clear tags apply, use an empty array []
 - Always return valid JSON with no markdown formatting`;
@@ -109,11 +109,11 @@ const parseCategorizationResponse = (response) => {
   try {
     const parsed = JSON.parse(cleaned);
     return {
-      destination: parsed.destination || 'needs_review',
+      destination: parsed.destination || 'Needs Review',
       confidence: parsed.confidence,
       data: parsed.data,
       name: parsed.data.name || parsed.data.original_text || 'Untitled',
-      status: parsed.data.status || 'active',
+      status: parsed.data.status || 'Active',
       nextAction: parsed.data.next_action || null,
       context: parsed.data.context || null,
       followUps: parsed.data.follow_ups || null,
@@ -124,7 +124,7 @@ const parseCategorizationResponse = (response) => {
     };
   } catch (e) {
     return {
-      destination: 'needs_review',
+      destination: 'Needs Review',
       confidence: 0,
       data: { original_text: response },
       name: 'Parse Error',
@@ -159,7 +159,7 @@ For PROJECTS:
   "destination": "projects",
   "data": {
     "name": "Project Name",
-    "status": "active",
+    "status": "Active",
     "next_action": "Specific next action to take",
     "notes": "Additional context",
     "tags": ["work"]
@@ -191,7 +191,7 @@ const reclassifyMessage = async (text, newCategory, currentStatus) => {
   const prompt = RECLASSIFICATION_PROMPT
     .replace(/{{CATEGORY}}/g, newCategory)
     .replace('{{TEXT}}', text)
-    .replace('{{STATUS}}', currentStatus || 'active');
+    .replace('{{STATUS}}', currentStatus || 'Active');
 
   const response = await createMessage({
     model: getModel(),

@@ -79,7 +79,7 @@ const createProjectsEntry = async ({ name, status, nextAction, notes, tags }) =>
 
   const properties = {
     'Name': { title: [{ text: { content: name } }] },
-    'Status': { select: { name: status || 'active' } },
+    'Status': { select: { name: status || 'Active' } },
     'Last Touched': { date: { start: getMSTDate() } }
   };
 
@@ -245,7 +245,7 @@ const queryActiveProjects = async () => {
     database_id: projects,
     filter: {
       property: 'Status',
-      select: { equals: 'active' }
+      select: { equals: 'Active' }
     },
     page_size: 20
   });
@@ -307,9 +307,9 @@ const queryAllOpenProjects = async () => {
     database_id: projects,
     filter: {
       or: [
-        { property: 'Status', select: { equals: 'active' } },
-        { property: 'Status', select: { equals: 'waiting' } },
-        { property: 'Status', select: { equals: 'blocked' } }
+        { property: 'Status', select: { equals: 'Active' } },
+        { property: 'Status', select: { equals: 'Waiting' } },
+        { property: 'Status', select: { equals: 'Blocked' } }
       ]
     },
     page_size: 30
