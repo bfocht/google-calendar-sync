@@ -93,7 +93,7 @@ const createDestinationEntry = async (destination, data) => {
       return createAdminEntry({
         name: data.name,
         notes: data.notes,
-        status: data.status || 'Todo',
+        status: data.status || 'Active',
         dueDate: data.dueDate
       });
     default:

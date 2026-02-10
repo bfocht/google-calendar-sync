@@ -8,8 +8,8 @@ A self-hosted productivity system that captures thoughts from Slack, categorizes
 - **Categorize**: Claude Haiku classifies into people/projects/ideas/admin (confidence > 0.6)
 - **Store**: Create entries in appropriate Notion database + Inbox Log audit trail
 - **Correct**: Handle "fix:" and "update:" replies to re-categorize or change status
-- **Digest**: Daily (5am) and weekly (Saturday 5pm) summaries with Google Tasks integration
-- **Deliver**: Post to Slack channels AND create Google Calendar events
+- **Digest**: Daily (5am) and weekly (Sunday 5pm) summaries with Google Tasks integration
+- **Deliver**: Post to Slack channels AND create Google Task events
 
 ## Stack
 
@@ -19,7 +19,7 @@ A self-hosted productivity system that captures thoughts from Slack, categorizes
 | Automation | Node.js on Raspberry Pi | $0 |
 | Storage | Notion (5 databases) | Free |
 | AI | Claude API (Haiku) | ~$1-2/month |
-| Delivery | Slack + Google Calendar | Free |
+| Delivery | Slack + Google Tasks | Free |
 
 ## Setup
 
@@ -28,7 +28,7 @@ A self-hosted productivity system that captures thoughts from Slack, categorizes
 1. Slack workspace with bot permissions
 2. Notion integration with database access
 3. Anthropic API key
-4. Google Cloud project with Calendar API enabled
+4. Google Cloud project with Calendar/Task API enabled
 
 ### Configuration
 
@@ -134,20 +134,24 @@ For clearer classification, use prefixes:
 src/
 ├── index.js              # Entry point
 ├── config.js             # Load credentials
+├── scheduler.js          # node-cron for scheduled tasks
 ├── slack/
 │   ├── client.js         # Slack Bolt setup (socket mode)
 │   └── handlers.js       # Message handlers (capture, fix, update)
 ├── notion/
 │   ├── client.js         # Notion client
 │   └── databases.js      # CRUD for all 5 databases
+├── llm/
+│   └── client.js         # LLM abstraction (LiteLLM with Anthropic fallback)
 ├── claude/
-│   └── categorize.js     # AI categorization + digest generation
+│   └── categorize.js     # AI categorization + digest generation prompts
 ├── calendar/
 │   └── events.js         # Google Calendar event creation
-├── digests/
-│   ├── daily.js          # Daily digest logic
-│   └── weekly.js         # Weekly digest logic
-└── scheduler.js          # node-cron for scheduled tasks
+├── tasks/
+│   └── tasks.js          # Google Tasks CRUD + cleanup
+└── digests/
+    ├── daily.js          # Daily digest logic
+    └── weekly.js         # Weekly digest logic
 ```
 
 ## Google Tasks Integration
@@ -191,7 +195,7 @@ The digest system integrates with Google Tasks to provide better context:
 
 ### Projects
 - Name (title)
-- Status (select: active/waiting/blocked/someday)
+- Status (select: Active/Waiting/Blocked/Done)
 - Next Action (text)
 - Notes (text)
 - Tags (multi-select)
@@ -206,7 +210,7 @@ The digest system integrates with Google Tasks to provide better context:
 
 ### Admin
 - Name (title)
-- Status (select: Todo/Done)
+- Status (select: Active/Done)
 - Notes (text)
 - Due Date (date)
 - Created (date)
