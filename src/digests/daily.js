@@ -4,7 +4,7 @@ const {
   queryOverdueAdmin
 } = require('../notion/databases');
 const { generateDailyDigestStructured, formatDigestForSlack } = require('../claude/categorize');
-const { createDailyTasks, listTasks } = require('../tasks/tasks');
+const { createDailyTasks, listTasks, listCompletedTasks } = require('../tasks/tasks');
 const { getApp } = require('../slack/client');
 const { getSlackConfig } = require('../config');
 
@@ -48,20 +48,21 @@ const runDailyDigest = async () => {
 
   try {
     // Query Notion databases and existing Google Tasks
-    const [projects, people, admin, existingTasks] = await Promise.all([
+    const [projects, people, admin, existingTasks, completedTasks] = await Promise.all([
       queryActiveProjects(),
       queryPeopleWithFollowUps(),
       queryOverdueAdmin(),
-      listTasks()
+      listTasks(),
+      listCompletedTasks()
     ]);
 
-    console.log(`Found ${projects.results.length} projects, ${people.results.length} people, ${admin.results.length} admin tasks, ${existingTasks.length} existing tasks`);
+    console.log(`Found ${projects.results.length} projects, ${people.results.length} people, ${admin.results.length} admin tasks, ${existingTasks.length} existing tasks, ${completedTasks.length} completed tasks`);
 
     // Build context
     const context = buildDailyContext(projects, people, admin);
 
-    // Generate structured digest with Claude (passing existing tasks to avoid duplicates)
-    const digest = await generateDailyDigestStructured(context, existingTasks);
+    // Generate structured digest with Claude (passing existing and completed tasks to avoid duplicates)
+    const digest = await generateDailyDigestStructured(context, existingTasks, completedTasks);
     console.log('Digest generated');
 
     // Format digest for Slack

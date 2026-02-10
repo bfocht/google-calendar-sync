@@ -132,7 +132,7 @@ const createAdminEntry = async ({ name, notes, status, dueDate }) => {
 
   const properties = {
     'Name': { title: [{ text: { content: name } }] },
-    'Status': { select: { name: status || 'Todo' } },
+    'Status': { select: { name: status || 'Active' } },
     'Created': { date: { start: getMSTDate() } }
   };
 
@@ -276,7 +276,7 @@ const queryOverdueAdmin = async () => {
     filter: {
       and: [
         { property: 'Due Date', date: { past_week: {} } },
-        { property: 'Status', select: { equals: 'Todo' } }
+        { property: 'Status', select: { equals: 'Active' } }
       ]
     },
     page_size: 10
