@@ -22,14 +22,23 @@ const buildDailyContext = (projects, people, admin) => {
     context += `   Next Action: ${nextAction}\n\n`;
   });
 
-  context += '\nPEOPLE TO FOLLOW UP WITH:\n';
-  people.results.forEach((p, i) => {
-    const name = p.properties?.Name?.title?.[0]?.plain_text || 'Unknown';
+  let peopleSection = '';
+  let personCount = 0;
+  people.results.forEach((p) => {
+    const name = p.properties?.Name?.title?.[0]?.plain_text;
+    const status = p.properties?.Status?.select?.name;
+    if (!name || !status) return;
     const followUp = p.properties?.['Follow-ups']?.rich_text?.[0]?.plain_text || 'None';
 
-    context += `${i + 1}. ${name}\n`;
-    context += `   Follow-up: ${followUp}\n\n`;
+    personCount++;
+    peopleSection += `${personCount}. ${name}\n`;
+    peopleSection += `   Status: ${status}\n`;
+    peopleSection += `   Follow-up: ${followUp}\n\n`;
   });
+  if (personCount > 0) {
+    context += '\nPEOPLE TO FOLLOW UP WITH:\n';
+    context += peopleSection;
+  }
 
   context += '\nTASKS DUE:\n';
   admin.results.forEach((a, i) => {

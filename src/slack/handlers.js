@@ -10,7 +10,8 @@ const {
   updateInboxLogEntry,
   archivePage,
   updateProjectsEntry,
-  updateAdminEntry
+  updateAdminEntry,
+  updatePeopleEntry
 } = require('../notion/databases');
 
 const CONFIDENCE_THRESHOLD = 0.6;
@@ -68,6 +69,7 @@ const createDestinationEntry = async (destination, data) => {
     case 'people':
       return createPeopleEntry({
         name: data.name,
+        status: data.status,
         context: data.context,
         followUps: data.followUps,
         tags: data.tags
@@ -91,7 +93,7 @@ const createDestinationEntry = async (destination, data) => {
       return createAdminEntry({
         name: data.name,
         notes: data.notes,
-        status: data.status || 'Active',
+        status: data.status,
         dueDate: data.dueDate
       });
     default:
@@ -277,6 +279,8 @@ const handleCorrection = async (message, say) => {
           await updateProjectsEntry(notionRecordId, { status: parsed.newStatus });
         } else if (currentFiledTo === 'admin') {
           await updateAdminEntry(notionRecordId, { status: parsed.newStatus });
+        } else if (currentFiledTo === 'people') {
+          await updatePeopleEntry(notionRecordId, { status: parsed.newStatus });
         }
       }
 

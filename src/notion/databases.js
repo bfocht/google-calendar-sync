@@ -47,12 +47,13 @@ const createInboxLogEntry = async ({
 };
 
 // Create People entry
-const createPeopleEntry = async ({ name, context, followUps, tags }) => {
+const createPeopleEntry = async ({ name, status, context, followUps, tags }) => {
   const notion = getClient();
   const { people } = getDatabaseIds();
 
   const properties = {
     'Name': { title: [{ text: { content: name } }] },
+    'Status': { select: { name: status || 'Active' } },
     'Last Touched': { date: { start: getMSTDate() } }
   };
 
@@ -236,6 +237,23 @@ const updateAdminEntry = async (pageId, { status }) => {
   });
 };
 
+// Update People status
+const updatePeopleEntry = async (pageId, { status }) => {
+  const notion = getClient();
+  const properties = {
+    'Last Touched': { date: { start: getMSTDate() } }
+  };
+
+  if (status) {
+    properties['Status'] = { select: { name: status } };
+  }
+
+  return notion.pages.update({
+    page_id: pageId,
+    properties
+  });
+};
+
 // Query active projects (for daily digest)
 const queryActiveProjects = async () => {
   const notion = getClient();
@@ -259,8 +277,10 @@ const queryPeopleWithFollowUps = async () => {
   return notion.databases.query({
     database_id: people,
     filter: {
-      property: 'Follow-ups',
-      rich_text: { is_not_empty: true }
+      or: [
+        { property: 'Status', select: { equals: 'Active' } },
+        { property: 'Status', select: { equals: 'Needs Review' } }
+      ]
     },
     page_size: 10
   });
@@ -327,6 +347,7 @@ module.exports = {
   archivePage,
   updateProjectsEntry,
   updateAdminEntry,
+  updatePeopleEntry,
   queryActiveProjects,
   queryPeopleWithFollowUps,
   queryOverdueAdmin,

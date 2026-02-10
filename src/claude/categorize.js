@@ -28,6 +28,7 @@ For PEOPLE:
   "confidence": 0.85,
   "data": {
     "name": "Person's Name",
+    "status": "Active when there is something to follow up on, otherwise set to Needs Review",
     "context": "How you know them or their role",
     "follow_ups": "Things to remember for next time",
     "tags": ["work", "friend"]
@@ -65,6 +66,7 @@ For ADMIN:
   "confidence": 0.85,
   "data": {
     "name": "Task name",
+    "status": "Active",
     "due_date": "2026-01-15 or null if not specified",
     "notes": "Additional context and details to follow up on"
   }
@@ -148,6 +150,7 @@ For PEOPLE:
   "destination": "people",
   "data": {
     "name": "Person's Name",
+    "status": "Active",
     "context": "How you know them or their role",
     "follow_ups": "Things to remember for next time",
     "tags": ["work", "friend"]
@@ -182,6 +185,7 @@ For ADMIN:
   "destination": "admin",
   "data": {
     "name": "Task name",
+    "status": "Active",
     "due_date": "2026-01-15 or null if not specified",
     "notes": "Additional context and details to follow up on"
   }
@@ -201,57 +205,6 @@ const reclassifyMessage = async (text, newCategory, currentStatus) => {
 
   const aiResponse = response.content[0].text;
   return parseCategorizationResponse(aiResponse);
-};
-
-const DAILY_DIGEST_PROMPT = `You are a personal productivity assistant. Generate a concise daily digest based on the following data.
-
-{{CONTEXT}}
-
-TODAY'S DATE: {{DATE}}
-
-INSTRUCTIONS:
-Create a digest with EXACTLY this format. Keep it under 150 words total.
-
----
-
-Good morning!
-
-**Top 3 Actions Today:**
-1. [Most important/urgent action from projects or admin]
-2. [Second priority]
-3. [Third priority]
-
-**People to Connect With:**
-- [Person name]: [Brief follow-up reminder]
-
-**Watch Out For:**
-[One thing that might be stuck, overdue, or getting neglected]
-
-**One Small Win to Notice:**
-[Something positive or progress made, or encouraging thought]
-
----
-
-RULES:
-- Be specific and actionable, not motivational
-- Prioritize overdue items and concrete next actions
-- If there's nothing in a section, omit it entirely
-- Keep language direct and practical
-- Don't add explanations or commentary outside the format`;
-
-const generateDailyDigest = async (context) => {
-  const date = new Date().toLocaleString('sv-SE', { timeZone: 'America/Phoenix' }).split(' ')[0];
-  const prompt = DAILY_DIGEST_PROMPT
-    .replace('{{CONTEXT}}', context)
-    .replace('{{DATE}}', date);
-
-  const response = await createMessage({
-    model: getModel(),
-    maxTokens: 1024,
-    messages: [{ role: 'user', content: prompt }]
-  });
-
-  return response.content[0].text;
 };
 
 const DAILY_DIGEST_STRUCTURED_PROMPT = `You are a personal productivity assistant. Generate a structured daily digest based on the following data.
@@ -279,6 +232,7 @@ OUTPUT FORMAT (return ONLY this JSON, no other text):
 }
 
 RULES:
+- Be specific and actionable, not motivational
 - topActions must have exactly 3 items with specific, executable actions
 - "Work on website" is bad. "Email Sarah to confirm deadline" is good
 - Do NOT suggest actions that duplicate or overlap with EXISTING TASKS
@@ -435,7 +389,6 @@ const generateWeeklyDigest = async (context, totalCaptures, completedTasks = [])
 module.exports = {
   categorizeMessage,
   reclassifyMessage,
-  generateDailyDigest,
   generateDailyDigestStructured,
   formatDigestForSlack,
   generateWeeklyDigest
