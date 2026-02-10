@@ -10,17 +10,19 @@ const { getSlackConfig } = require('../config');
 
 // Build context string from Notion data
 const buildDailyContext = (projects, people, admin) => {
-  let context = 'ACTIVE PROJECTS:\n';
+  let context = '';
+  if (projects.results.length > 0) {
+    context += 'ACTIVE PROJECTS:\n';
+    projects.results.forEach((p, i) => {
+      const name = p.properties?.Name?.title?.[0]?.plain_text || 'Untitled';
+      const status = p.properties?.Status?.select?.name || 'Unknown';
+      const nextAction = p.properties?.['Next Action']?.rich_text?.[0]?.plain_text || 'None specified';
 
-  projects.results.forEach((p, i) => {
-    const name = p.properties?.Name?.title?.[0]?.plain_text || 'Untitled';
-    const status = p.properties?.Status?.select?.name || 'Unknown';
-    const nextAction = p.properties?.['Next Action']?.rich_text?.[0]?.plain_text || 'None specified';
-
-    context += `${i + 1}. ${name}\n`;
-    context += `   Status: ${status}\n`;
-    context += `   Next Action: ${nextAction}\n\n`;
-  });
+      context += ` ${i + 1}. ${name}\n`;
+      context += `   Status: ${status}\n`;
+      context += `   Next Action: ${nextAction}\n\n`;
+    });
+  }
 
   let peopleSection = '';
   let personCount = 0;
@@ -31,23 +33,30 @@ const buildDailyContext = (projects, people, admin) => {
     const followUp = p.properties?.['Follow-ups']?.rich_text?.[0]?.plain_text || 'None';
 
     personCount++;
-    peopleSection += `${personCount}. ${name}\n`;
+    peopleSection += ` ${personCount}. ${name}\n`;
     peopleSection += `   Status: ${status}\n`;
     peopleSection += `   Follow-up: ${followUp}\n\n`;
   });
   if (personCount > 0) {
-    context += '\nPEOPLE TO FOLLOW UP WITH:\n';
+    context += 'PEOPLE TO FOLLOW UP WITH:\n';
     context += peopleSection;
   }
 
-  context += '\nTASKS DUE:\n';
-  admin.results.forEach((a, i) => {
-    const name = a.properties?.Name?.title?.[0]?.plain_text || 'Untitled';
-    const dueDate = a.properties?.['Due Date']?.date?.start || 'No date';
+  if (admin.results.length > 0) {
+    context += 'TASKS DUE:\n';
+    admin.results.forEach((a, i) => {
+      const name = a.properties?.Name?.title?.[0]?.plain_text || 'Untitled';
+      const dueDate = a.properties?.['Due Date']?.date?.start || 'No date';
+      const notes = a.properties?.Notes?.rich_text?.[0]?.plain_text || '';
 
-    context += `${i + 1}. ${name}\n`;
-    context += `   Due: ${dueDate}\n\n`;
-  });
+      context += ` ${i + 1}. ${name}\n`;
+      context += `   Due: ${dueDate}\n`;
+      if (notes) {
+        context += `   Notes: ${notes}\n`;
+      }
+      context += '\n';
+    });
+  }
 
   return context;
 };

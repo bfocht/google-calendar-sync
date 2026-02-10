@@ -249,12 +249,12 @@ const generateDailyDigestStructured = async (context, existingTasks = [], comple
 
   // Format existing tasks for the prompt
   const existingTasksText = existingTasks.length > 0
-    ? 'EXISTING TASKS (do not duplicate):\n' + existingTasks.map(t => `- ${t.title}`).join('\n')
+    ? 'EXISTING TASKS (do not duplicate):\n' + existingTasks.map(t => ` - ${t.title}`).join('\n')
     : '';
 
   // Format completed tasks for the prompt
   const completedTasksText = completedTasks.length > 0
-    ? 'RECENTLY COMPLETED TASKS:\n' + completedTasks.map(t => `- ${t.title}`).join('\n')
+    ? 'RECENTLY COMPLETED TASKS:\n' + completedTasks.map(t => ` - ${t.title}`).join('\n')
     : '';
 
   const prompt = DAILY_DIGEST_STRUCTURED_PROMPT
@@ -323,7 +323,6 @@ const formatDigestForSlack = (digest) => {
 const WEEKLY_DIGEST_PROMPT = `You are a personal productivity assistant conducting a weekly review. Analyze the following data and generate an insightful summary.
 
 {{CONTEXT}}
-
 TOTAL CAPTURES THIS WEEK: {{TOTAL_CAPTURES}}
 {{COMPLETED_TASKS}}
 
@@ -361,7 +360,7 @@ Create a weekly review with EXACTLY this format. Keep it under 250 words total.
 
 RULES:
 - Be analytical, not motivational
-- Call out projects that haven't had action in over a week
+- Call out projects that have not had action in over a week
 - Note if capture volume was unusually high or low
 - Suggest concrete next actions, not vague intentions
 - If something looks stuck, say so directly
@@ -369,7 +368,7 @@ RULES:
 
 const generateWeeklyDigest = async (context, totalCaptures, completedTasks = []) => {
   const completedTasksText = completedTasks.length > 0
-    ? '\nCOMPLETED TASKS THIS WEEK:\n' + completedTasks.map(t => `- ${t.title}`).join('\n')
+    ? '\nCOMPLETED TASKS THIS WEEK:\n' + completedTasks.map(t => ` - ${t.title}`).join('\n')
     : '';
 
   const prompt = WEEKLY_DIGEST_PROMPT

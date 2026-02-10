@@ -294,10 +294,15 @@ const queryOverdueAdmin = async () => {
   return notion.databases.query({
     database_id: admin,
     filter: {
-      and: [
-        { property: 'Due Date', date: { past_week: {} } },
-        { property: 'Status', select: { equals: 'Active' } }
-      ]
+        and: [
+          {
+            or: [
+              { property: 'Due Date', date: { past_week: {} } },
+              { property: 'Due Date', date: { is_empty: true } }
+            ]
+          },
+          { property: 'Status', select: { equals: 'Active' } }
+        ]
     },
     page_size: 10
   });

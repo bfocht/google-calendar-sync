@@ -9,7 +9,7 @@ const { deleteOldCompletedTasks, listCompletedTasks } = require('../tasks/tasks'
 
 // Build context string from Notion data
 const buildWeeklyContext = (inboxLog, projects) => {
-  let context = '=== ITEMS CAPTURED THIS WEEK ===\n\n';
+  let context = '=== ITEMS CAPTURED THIS WEEK ===\n';
 
   inboxLog.results.forEach((item, i) => {
     const originalText = item.properties?.['Original Text']?.title?.[0]?.plain_text || 'No text';
@@ -17,24 +17,25 @@ const buildWeeklyContext = (inboxLog, projects) => {
     const destName = item.properties?.['Destination Name']?.rich_text?.[0]?.plain_text || '';
     const status = item.properties?.Status?.select?.name || '';
 
-    context += `${i + 1}. [${filedTo}] ${destName || originalText.substring(0, 50)}\n`;
+    context += ` ${i + 1}. [${filedTo}] ${destName || originalText.substring(0, 50)}`;
     if (status === 'Needs Review') {
       context += `   WARNING: NEEDS REVIEW\n`;
     }
     context += '\n';
   });
 
-  context += '\n=== ACTIVE PROJECTS STATUS ===\n\n';
+  if (projects.results.length > 0) {
+    context += '\n=== ACTIVE PROJECTS STATUS ===\n';
+    projects.results.forEach((p, i) => {
+      const name = p.properties?.Name?.title?.[0]?.plain_text || 'Untitled';
+      const status = p.properties?.Status?.select?.name || 'Unknown';
+      const nextAction = p.properties?.['Next Action']?.rich_text?.[0]?.plain_text || 'None specified';
 
-  projects.results.forEach((p, i) => {
-    const name = p.properties?.Name?.title?.[0]?.plain_text || 'Untitled';
-    const status = p.properties?.Status?.select?.name || 'Unknown';
-    const nextAction = p.properties?.['Next Action']?.rich_text?.[0]?.plain_text || 'None specified';
-
-    context += `${i + 1}. ${name}\n`;
-    context += `   Status: ${status}\n`;
-    context += `   Next: ${nextAction}\n\n`;
-  });
+      context += ` ${i + 1}. ${name}\n`;
+      context += `   Status: ${status}\n`;
+      context += `   Next: ${nextAction}\n\n`;
+    });
+  }
 
   // Count by category
   const categoryCounts = {};
@@ -45,7 +46,7 @@ const buildWeeklyContext = (inboxLog, projects) => {
 
   context += '\n=== CAPTURE SUMMARY ===\n';
   for (const [cat, count] of Object.entries(categoryCounts)) {
-    context += `${cat}: ${count}\n`;
+    context += ` ${cat}: ${count}\n`;
   }
 
   return context;
