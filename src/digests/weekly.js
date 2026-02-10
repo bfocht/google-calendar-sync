@@ -5,6 +5,7 @@ const {
 const { generateWeeklyDigest } = require('../claude/categorize');
 const { getApp } = require('../slack/client');
 const { getSlackConfig } = require('../config');
+const { deleteOldCompletedTasks, listCompletedTasks } = require('../tasks/tasks');
 
 // Build context string from Notion data
 const buildWeeklyContext = (inboxLog, projects) => {
@@ -54,20 +55,21 @@ const runWeeklyDigest = async () => {
   console.log('Running weekly digest...');
 
   try {
-    // Query Notion databases
-    const [inboxLog, projects] = await Promise.all([
+    // Query Notion databases and completed tasks
+    const [inboxLog, projects, completedTasks] = await Promise.all([
       queryWeekInboxLog(),
-      queryAllOpenProjects()
+      queryAllOpenProjects(),
+      listCompletedTasks()
     ]);
 
-    console.log(`Found ${inboxLog.results.length} inbox items, ${projects.results.length} projects`);
+    console.log(`Found ${inboxLog.results.length} inbox items, ${projects.results.length} projects, ${completedTasks.length} completed tasks`);
 
     // Build context
     const context = buildWeeklyContext(inboxLog, projects);
     const totalCaptures = inboxLog.results.length;
 
     // Generate digest with Claude
-    const digest = await generateWeeklyDigest(context, totalCaptures);
+    const digest = await generateWeeklyDigest(context, totalCaptures, completedTasks);
     console.log('Weekly digest generated');
 
     // Post to Slack #weekly-digest channel
@@ -82,6 +84,10 @@ const runWeeklyDigest = async () => {
       icon_emoji: ':date:'
     });
     console.log('Posted to Slack');
+
+    // Clean up completed Google Tasks older than 7 days
+    const deletedCount = await deleteOldCompletedTasks(7);
+    console.log(`Cleaned up ${deletedCount} completed tasks`);
 
     console.log('Weekly digest complete');
     return digest;

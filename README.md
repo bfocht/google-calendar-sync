@@ -8,7 +8,7 @@ A self-hosted productivity system that captures thoughts from Slack, categorizes
 - **Categorize**: Claude Haiku classifies into people/projects/ideas/admin (confidence > 0.6)
 - **Store**: Create entries in appropriate Notion database + Inbox Log audit trail
 - **Correct**: Handle "fix:" and "update:" replies to re-categorize or change status
-- **Digest**: Daily (5am) and weekly (Saturday 5pm) summaries
+- **Digest**: Daily (5am) and weekly (Saturday 5pm) summaries with Google Tasks integration
 - **Deliver**: Post to Slack channels AND create Google Calendar events
 
 ## Stack
@@ -149,6 +149,25 @@ src/
 │   └── weekly.js         # Weekly digest logic
 └── scheduler.js          # node-cron for scheduled tasks
 ```
+
+## Google Tasks Integration
+
+The digest system integrates with Google Tasks to provide better context:
+
+### Daily Digest
+- Shows existing incomplete tasks to avoid duplicate suggestions
+- Shows recently completed tasks so the AI doesn't re-suggest finished work
+- Creates Google Tasks for the Top 3 Actions
+
+### Weekly Digest
+- Includes completed tasks in the "What Moved Forward" analysis
+- Cleans up completed tasks older than 7 days after digest runs
+
+### Task Lifecycle
+1. Daily digest generates Top 3 Actions and creates Google Tasks
+2. User completes tasks in Google Tasks throughout the week
+3. Weekly digest sees completed tasks for progress tracking
+4. Old completed tasks (>7 days) are cleaned up after weekly digest
 
 ## Notion Database Schema
 

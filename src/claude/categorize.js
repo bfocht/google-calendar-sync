@@ -260,6 +260,8 @@ const DAILY_DIGEST_STRUCTURED_PROMPT = `You are a personal productivity assistan
 
 {{EXISTING_TASKS}}
 
+{{COMPLETED_TASKS}}
+
 TODAY'S DATE: {{DATE}}
 
 OUTPUT FORMAT (return ONLY this JSON, no other text):
@@ -280,6 +282,7 @@ RULES:
 - topActions must have exactly 3 items with specific, executable actions
 - "Work on website" is bad. "Email Sarah to confirm deadline" is good
 - Do NOT suggest actions that duplicate or overlap with EXISTING TASKS
+- Do NOT suggest actions that are already COMPLETED
 - If nothing for peopleToConnect, use empty array []
 - If nothing to watch out for, use null
 - If no small win to note, use null
@@ -287,7 +290,7 @@ RULES:
 - Keep notes brief (under 100 characters)
 - Always return valid JSON with no markdown formatting`;
 
-const generateDailyDigestStructured = async (context, existingTasks = []) => {
+const generateDailyDigestStructured = async (context, existingTasks = [], completedTasks = []) => {
   const date = new Date().toLocaleString('sv-SE', { timeZone: 'America/Phoenix' }).split(' ')[0];
 
   // Format existing tasks for the prompt
@@ -295,10 +298,16 @@ const generateDailyDigestStructured = async (context, existingTasks = []) => {
     ? 'EXISTING TASKS (do not duplicate):\n' + existingTasks.map(t => `- ${t.title}`).join('\n')
     : '';
 
+  // Format completed tasks for the prompt
+  const completedTasksText = completedTasks.length > 0
+    ? 'RECENTLY COMPLETED TASKS:\n' + completedTasks.map(t => `- ${t.title}`).join('\n')
+    : '';
+
   const prompt = DAILY_DIGEST_STRUCTURED_PROMPT
     .replace('{{CONTEXT}}', context)
     .replace('{{DATE}}', date)
-    .replace('{{EXISTING_TASKS}}', existingTasksText);
+    .replace('{{EXISTING_TASKS}}', existingTasksText)
+    .replace('{{COMPLETED_TASKS}}', completedTasksText);
 
   const response = await createMessage({
     model: getModel(),
@@ -362,6 +371,7 @@ const WEEKLY_DIGEST_PROMPT = `You are a personal productivity assistant conducti
 {{CONTEXT}}
 
 TOTAL CAPTURES THIS WEEK: {{TOTAL_CAPTURES}}
+{{COMPLETED_TASKS}}
 
 INSTRUCTIONS:
 Create a weekly review with EXACTLY this format. Keep it under 250 words total.
@@ -403,10 +413,15 @@ RULES:
 - If something looks stuck, say so directly
 - Keep language concise and actionable`;
 
-const generateWeeklyDigest = async (context, totalCaptures) => {
+const generateWeeklyDigest = async (context, totalCaptures, completedTasks = []) => {
+  const completedTasksText = completedTasks.length > 0
+    ? '\nCOMPLETED TASKS THIS WEEK:\n' + completedTasks.map(t => `- ${t.title}`).join('\n')
+    : '';
+
   const prompt = WEEKLY_DIGEST_PROMPT
     .replace('{{CONTEXT}}', context)
-    .replace('{{TOTAL_CAPTURES}}', totalCaptures.toString());
+    .replace('{{TOTAL_CAPTURES}}', totalCaptures.toString())
+    .replace('{{COMPLETED_TASKS}}', completedTasksText);
 
   const response = await createMessage({
     model: getModel(),
