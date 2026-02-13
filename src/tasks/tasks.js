@@ -2,6 +2,7 @@ const { google } = require('googleapis');
 const { authorize } = require('../calendar/events');
 
 const RATE_LIMIT_MS = 500;
+const MAX_OPEN_TASKS = 5;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -124,6 +125,13 @@ const createTask = async ({ title, notes, due }) => {
 
 // Create multiple tasks from the Top 3 Actions
 const createDailyTasks = async (actions) => {
+  // Check if too many tasks are already open
+  const openTasks = await listTasks();
+  if (openTasks.length >= MAX_OPEN_TASKS) {
+    console.log(`Skipping task creation: ${openTasks.length} open tasks (max: ${MAX_OPEN_TASKS})`);
+    return [];
+  }
+
   const results = [];
 
   for (const action of actions) {
