@@ -16,6 +16,14 @@ const {
 
 const CONFIDENCE_THRESHOLD = 0.6;
 
+// Status keywords mapping (module-level for reuse)
+const statuses = {
+  'Active': ['active', 'started', 'progress', 'todo', 'unknown'],
+  'Waiting': ['waiting', 'someday', 'pending', 'hold'],
+  'Blocked': ['blocked', 'block', 'stuck', 'issue'],
+  'Done': ['done', 'finish', 'finished', 'complete', 'completed', 'closed'],
+};
+
 // Parse fix/update commands
 const parseCorrection = (message) => {
   const fixMatch = message.match(/(fix|update):\s*(.+)/i);
@@ -28,13 +36,6 @@ const parseCorrection = (message) => {
     'projects': ['projects', 'project'],
     'ideas': ['ideas', 'idea'],
     'admin': ['admin', 'task', 'errand']
-  };
-
-  const statuses = {
-    'Active': ['active', 'started', 'progress', 'todo', 'pending', 'unknown'],
-    'Waiting': ['waiting', 'someday'],
-    'Blocked': ['blocked', 'block'],
-    'Done': ['done', 'finish', 'finished', 'complete']
   };
 
   let newDestination = null;
@@ -117,9 +118,11 @@ const setupHandlers = () => {
       return;
     }
 
-    // Handle "done" shortcut as equivalent to "update: done"
-    if (text.toLowerCase().trim() === 'done') {
-      await handleCorrection({ ...message, text: 'update: done' }, say);
+    // Handle status keyword shortcuts (e.g., "done", "active", "waiting")
+    const normalizedText = text.toLowerCase().trim();
+    const allStatusKeywords = Object.values(statuses).flat();
+    if (allStatusKeywords.includes(normalizedText)) {
+      await handleCorrection({ ...message, text: `update: ${normalizedText}` }, say);
       return;
     }
 
