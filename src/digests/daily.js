@@ -7,9 +7,10 @@ const { generateDailyDigestStructured, formatDigestForSlack } = require('../clau
 const { createDailyTasks, listTasks, listCompletedTasks } = require('../tasks/tasks');
 const { getApp } = require('../slack/client');
 const { getSlackConfig } = require('../config');
+const { checkKeyExpiration } = require('../llm/client');
 
 // Build context string from Notion data
-const buildDailyContext = (projects, people, admin) => {
+const buildDailyContext = (projects, people, admin, keyAlert = null) => {
   let context = '';
   if (projects.results.length > 0) {
     context += 'ACTIVE PROJECTS:\n';
@@ -42,14 +43,30 @@ const buildDailyContext = (projects, people, admin) => {
     context += peopleSection;
   }
 
-  if (admin.results.length > 0) {
+  // Build tasks section with key alert prepended if present
+  const hasKeyAlert = keyAlert !== null;
+  const hasAdminTasks = admin.results.length > 0;
+
+  if (hasKeyAlert || hasAdminTasks) {
     context += 'TASKS DUE:\n';
-    admin.results.forEach((a, i) => {
+    let taskIndex = 0;
+
+    // Key expiration alert first (highest priority)
+    if (hasKeyAlert) {
+      taskIndex++;
+      context += ` ${taskIndex}. ${keyAlert.name} [URGENT]\n`;
+      context += `   Due: ${keyAlert.dueDate}\n`;
+      context += `   Notes: ${keyAlert.notes}\n\n`;
+    }
+
+    // Regular admin tasks
+    admin.results.forEach((a) => {
+      taskIndex++;
       const name = a.properties?.Name?.title?.[0]?.plain_text || 'Untitled';
       const dueDate = a.properties?.['Due Date']?.date?.start || 'No date';
       const notes = a.properties?.Notes?.rich_text?.[0]?.plain_text || '';
 
-      context += ` ${i + 1}. ${name}\n`;
+      context += ` ${taskIndex}. ${name}\n`;
       context += `   Due: ${dueDate}\n`;
       if (notes) {
         context += `   Notes: ${notes}\n`;
@@ -65,19 +82,36 @@ const runDailyDigest = async () => {
   console.log('Running daily digest...');
 
   try {
-    // Query Notion databases and existing Google Tasks
-    const [projects, people, admin, existingTasks, completedTasks] = await Promise.all([
+    // Query Notion databases, existing Google Tasks, and key expiration
+    const [projects, people, admin, existingTasks, completedTasks, keyExpiration] = await Promise.all([
       queryActiveProjects(),
       queryPeopleWithFollowUps(),
       queryOverdueAdmin(),
       listTasks(),
-      listCompletedTasks()
+      listCompletedTasks(),
+      checkKeyExpiration()
     ]);
 
     console.log(`Found ${projects.results.length} projects, ${people.results.length} people, ${admin.results.length} admin tasks, ${existingTasks.length} existing tasks, ${completedTasks.length} completed tasks`);
 
+    // Check if API key is expiring soon
+    let keyExpirationAlert = null;
+    if (keyExpiration) {
+      const expiresDate = new Date(keyExpiration);
+      const now = new Date();
+      const daysUntilExpiry = Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24));
+      if (daysUntilExpiry <= 3) {
+        keyExpirationAlert = {
+          name: 'Renew OpenAI LLM API key',
+          dueDate: keyExpiration.split('T')[0],
+          notes: `Key expires in ${daysUntilExpiry} day(s)`
+        };
+        console.log(`OpenAI LLM API key expires in ${daysUntilExpiry} day(s)`);
+      }
+    }
+
     // Build context
-    const context = buildDailyContext(projects, people, admin);
+    const context = buildDailyContext(projects, people, admin, keyExpirationAlert);
 
     // Generate structured digest with Claude (passing existing and completed tasks to avoid duplicates)
     const digest = await generateDailyDigestStructured(context, existingTasks, completedTasks);

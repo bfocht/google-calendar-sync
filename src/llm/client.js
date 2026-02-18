@@ -27,7 +27,7 @@ const loadConfig = () => {
       secondary: {
         type: 'anthropic',
         apiKey: anthropicConfig.apiKey,
-        model: anthropicConfig.model || 'claude-3-haiku-20240307'
+        model: anthropicConfig.model || 'claude-sonnet-4-6'
       },
       fallbackEnabled: false
     };
@@ -201,7 +201,25 @@ const getModel = () => {
   return cfg.secondary?.model || 'claude-3-haiku-20240307';
 };
 
+const checkKeyExpiration = async () => {
+  const cfg = loadConfig();
+  if (!cfg.primary?.baseUrl || !cfg.primary?.apiKey) return null;
+
+  try {
+    const response = await fetch(`${cfg.primary.baseUrl}/key/info`, {
+      headers: { 'Authorization': `Bearer ${cfg.primary.apiKey}` }
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.expires || null;
+  } catch (error) {
+    console.log('Could not check key expiration:', error.message);
+    return null;
+  }
+};
+
 module.exports = {
   createMessage,
-  getModel
+  getModel,
+  checkKeyExpiration
 };
