@@ -254,7 +254,7 @@ const generateDailyDigestStructured = async (context, existingTasks = [], comple
 
   // Format completed tasks for the prompt
   const completedTasksText = completedTasks.length > 0
-    ? 'RECENTLY COMPLETED TASKS:\n' + completedTasks.map(t => ` - ${t.title}`).join('\n')
+    ? 'RECENTLY COMPLETED TASKS (do not reopen as new tasks):\n' + completedTasks.map(t => ` - ${t.title}`).join('\n')
     : '';
 
   const prompt = DAILY_DIGEST_STRUCTURED_PROMPT
