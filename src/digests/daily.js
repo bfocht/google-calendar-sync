@@ -1,7 +1,8 @@
 const {
   queryActiveProjects,
   queryPeopleWithFollowUps,
-  queryOverdueAdmin
+  queryOverdueAdmin,
+  queryUpcomingAdmin
 } = require('../notion/databases');
 const { generateDailyDigestStructured, formatDigestForSlack } = require('../claude/categorize');
 const { createDailyTasks, listTasks, listCompletedTasks } = require('../tasks/tasks');
@@ -10,7 +11,7 @@ const { getSlackConfig } = require('../config');
 const { checkKeyExpiration } = require('../llm/client');
 
 // Build context string from Notion data
-const buildDailyContext = (projects, people, admin, keyAlert = null) => {
+const buildDailyContext = (projects, people, admin, upcomingAdmin, keyAlert = null) => {
   let context = '';
   if (projects.results.length > 0) {
     context += 'ACTIVE PROJECTS:\n';
@@ -75,6 +76,23 @@ const buildDailyContext = (projects, people, admin, keyAlert = null) => {
     });
   }
 
+  // Build upcoming tasks section
+  if (upcomingAdmin.results.length > 0) {
+    context += 'UPCOMING TASKS (Next Week):\n';
+    upcomingAdmin.results.forEach((a, i) => {
+      const name = a.properties?.Name?.title?.[0]?.plain_text || 'Untitled';
+      const dueDate = a.properties?.['Due Date']?.date?.start || 'No date';
+      const notes = a.properties?.Notes?.rich_text?.[0]?.plain_text || '';
+
+      context += ` ${i + 1}. ${name}\n`;
+      context += `   Due: ${dueDate}\n`;
+      if (notes) {
+        context += `   Notes: ${notes}\n`;
+      }
+      context += '\n';
+    });
+  }
+
   return context;
 };
 
@@ -83,16 +101,17 @@ const runDailyDigest = async () => {
 
   try {
     // Query Notion databases, existing Google Tasks, and key expiration
-    const [projects, people, admin, existingTasks, completedTasks, keyExpiration] = await Promise.all([
+    const [projects, people, admin, upcomingAdmin, existingTasks, completedTasks, keyExpiration] = await Promise.all([
       queryActiveProjects(),
       queryPeopleWithFollowUps(),
       queryOverdueAdmin(),
+      queryUpcomingAdmin(),
       listTasks(),
       listCompletedTasks(),
       checkKeyExpiration()
     ]);
 
-    console.log(`Found ${projects.results.length} projects, ${people.results.length} people, ${admin.results.length} admin tasks, ${existingTasks.length} existing tasks, ${completedTasks.length} completed tasks`);
+    console.log(`Found ${projects.results.length} projects, ${people.results.length} people, ${admin.results.length} admin tasks, ${upcomingAdmin.results.length} upcoming tasks, ${existingTasks.length} existing tasks, ${completedTasks.length} completed tasks`);
 
     // Check if API key is expiring soon
     let keyExpirationAlert = null;
@@ -111,11 +130,11 @@ const runDailyDigest = async () => {
     }
 
     // Build context
-    const context = buildDailyContext(projects, people, admin, keyExpirationAlert);
+    const context = buildDailyContext(projects, people, admin, upcomingAdmin, keyExpirationAlert);
+
 
     // Generate structured digest with Claude (passing existing and completed tasks to avoid duplicates)
     const digest = await generateDailyDigestStructured(context, existingTasks, completedTasks);
-    console.log('Digest generated');
 
     // Format digest for Slack
     const slackText = formatDigestForSlack(digest);

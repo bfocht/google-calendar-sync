@@ -262,8 +262,10 @@ const queryActiveProjects = async () => {
   return notion.databases.query({
     database_id: projects,
     filter: {
-      property: 'Status',
-      select: { equals: 'Active' }
+      or: [
+        { property: 'Status', select: { equals: 'Active' } },
+        { property: 'Status', select: { equals: 'Waiting' } }
+      ]
     },
     page_size: 20
   });
@@ -294,17 +296,35 @@ const queryOverdueAdmin = async () => {
   return notion.databases.query({
     database_id: admin,
     filter: {
-        and: [
-          {
-            or: [
-              { property: 'Due Date', date: { past_week: {} } },
-              { property: 'Due Date', date: { is_empty: true } }
-            ]
-          },
-          { property: 'Status', select: { equals: 'Active' } }
-        ]
+      and: [
+        {
+          or: [
+            { property: 'Due Date', date: { past_week: {} } },
+            { property: 'Due Date', date: { is_empty: true } }
+          ]
+        },
+        { property: 'Status', select: { equals: 'Active' } }
+      ]
     },
     page_size: 10
+  });
+};
+
+// Query upcoming admin tasks (next week) for daily digest
+const queryUpcomingAdmin = async () => {
+  const notion = getClient();
+  const { admin } = getDatabaseIds();
+
+  return notion.databases.query({
+    database_id: admin,
+    filter: {
+      and: [
+        { property: 'Due Date', date: { next_week: {} } },
+        { property: 'Status', select: { equals: 'Active' } }
+      ]
+    },
+    page_size: 10,
+    sorts: [{ property: 'Due Date', direction: 'ascending' }]
   });
 };
 
@@ -356,6 +376,7 @@ module.exports = {
   queryActiveProjects,
   queryPeopleWithFollowUps,
   queryOverdueAdmin,
+  queryUpcomingAdmin,
   queryWeekInboxLog,
   queryAllOpenProjects
 };
