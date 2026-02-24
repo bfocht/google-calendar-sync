@@ -27,7 +27,7 @@ const loadConfig = () => {
       secondary: {
         type: 'anthropic',
         apiKey: anthropicConfig.apiKey,
-        model: anthropicConfig.model || 'claude-sonnet-4-6'
+        model: anthropicConfig.model
       },
       fallbackEnabled: false
     };
@@ -198,7 +198,7 @@ const getModel = () => {
   if (cfg.primary) {
     return cfg.primary.model;
   }
-  return cfg.secondary?.model || 'claude-3-haiku-20240307';
+  return cfg.secondary.model;
 };
 
 const checkKeyExpiration = async () => {

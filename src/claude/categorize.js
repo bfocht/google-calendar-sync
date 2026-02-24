@@ -233,10 +233,10 @@ OUTPUT FORMAT (return ONLY this JSON, no other text):
 
 RULES:
 - Be specific and actionable, not motivational
-- topActions must have exactly 3 items with specific, executable actions
+- topActions must have no more than 3 items with specific, executable actions
 - "Work on website" is bad. "Email Sarah to confirm deadline" is good
 - Do NOT suggest actions that duplicate or overlap with EXISTING TASKS
-- Do NOT suggest actions that are already COMPLETED
+- Do NOT suggest actions that are WAITING or COMPLETED
 - If nothing for peopleToConnect, use empty array []
 - If nothing to watch out for, use null
 - If no small win to note, use null
@@ -292,7 +292,7 @@ const formatDigestForSlack = (digest) => {
   let text = 'Good morning!\n\n';
 
   if (digest.topActions && digest.topActions.length > 0) {
-    text += '*Top 3 Actions Today:*\n';
+    text += '*Top Actions Today:*\n';
     digest.topActions.forEach((action, i) => {
       text += `${i + 1}. ${action.title}\n`;
     });
