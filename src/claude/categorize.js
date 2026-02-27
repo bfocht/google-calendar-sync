@@ -385,10 +385,76 @@ const generateWeeklyDigest = async (context, totalCaptures, completedTasks = [])
   return response.content[0].text;
 };
 
+const TASK_COMPLETION_MATCH_PROMPT = `You are matching completed Google Tasks against open inbox items from a personal productivity system.
+
+COMPLETED TASKS:
+{{TASKS}}
+
+OPEN INBOX ITEMS:
+{{INBOX_ITEMS}}
+
+INSTRUCTIONS:
+For each completed task, check if it semantically matches an open inbox item. A match means the task and inbox item refer to the same action, project, or topic — even if worded differently.
+
+OUTPUT FORMAT (return ONLY this JSON, no other text):
+{
+  "matches": [
+    {
+      "inboxItemId": "notion-page-id",
+      "inboxDestinationName": "Name from inbox item",
+      "matchedTaskTitle": "Title of the completed task",
+      "confidence": 0.85
+    }
+  ]
+}
+
+RULES:
+- Only include matches with confidence >= 0.7
+- Each inbox item should match at most one task
+- If no matches exist, return { "matches": [] }
+- Always return valid JSON with no markdown formatting`;
+
+const matchCompletedTasksToInbox = async (completedTasks, inboxItems) => {
+  if (!completedTasks.length || !inboxItems.length) {
+    return { matches: [] };
+  }
+
+  const tasksText = completedTasks.map((t, i) => `${i + 1}. ${t.title}`).join('\n');
+
+  const itemsText = inboxItems.map(item => {
+    const id = item.id;
+    const destName = item.properties?.['Destination Name']?.rich_text?.[0]?.plain_text || 'Untitled';
+    const filedTo = item.properties?.['Filed-To']?.select?.name || 'Unknown';
+    const status = item.properties?.Status?.select?.name || 'Unknown';
+    return `- ID: ${id} | Name: ${destName} | Filed-To: ${filedTo} | Status: ${status}`;
+  }).join('\n');
+
+  const prompt = TASK_COMPLETION_MATCH_PROMPT
+    .replace('{{TASKS}}', tasksText)
+    .replace('{{INBOX_ITEMS}}', itemsText);
+
+  const response = await createMessage({
+    model: getModel(),
+    maxTokens: 1024,
+    messages: [{ role: 'user', content: prompt }]
+  });
+
+  const aiResponse = response.content[0].text;
+  let cleaned = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.error('Failed to parse task completion matches:', e.message);
+    return { matches: [] };
+  }
+};
+
 module.exports = {
   categorizeMessage,
   reclassifyMessage,
   generateDailyDigestStructured,
   formatDigestForSlack,
-  generateWeeklyDigest
+  generateWeeklyDigest,
+  matchCompletedTasksToInbox
 };

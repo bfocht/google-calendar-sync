@@ -7,7 +7,8 @@
     "start": "node index.js",
     "brain": "node src/index.js",
     "daily": "node src/digests/daily.js",
-    "weekly": "node src/digests/weekly.js"
+    "weekly": "node src/digests/weekly.js",
+    "maintenance": "node src/digests/maintenance.js"
   },
   "author": "Bryan Focht",
   "license": "ISC",

@@ -361,6 +361,24 @@ const queryAllOpenProjects = async () => {
   });
 };
 
+// Query open inbox log entries (Active, Waiting, or Blocked)
+const queryOpenInboxLog = async () => {
+  const notion = getClient();
+  const { inboxLog } = getDatabaseIds();
+
+  return notion.databases.query({
+    database_id: inboxLog,
+    filter: {
+      or: [
+        { property: 'Status', select: { equals: 'Active' } },
+        { property: 'Status', select: { equals: 'Waiting' } },
+        { property: 'Status', select: { equals: 'Blocked' } }
+      ]
+    },
+    page_size: 100
+  });
+};
+
 module.exports = {
   createInboxLogEntry,
   createPeopleEntry,
@@ -378,5 +396,6 @@ module.exports = {
   queryOverdueAdmin,
   queryUpcomingAdmin,
   queryWeekInboxLog,
-  queryAllOpenProjects
+  queryAllOpenProjects,
+  queryOpenInboxLog
 };
