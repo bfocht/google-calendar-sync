@@ -32,8 +32,9 @@ const startScheduler = () => {
     timezone: 'America/Phoenix'
   });
 
-  // Daily maintenance at 4:30 AM Phoenix time, weekdays only (Mon-Fri)
-  maintenanceJob = cron.schedule('30 4 * * 1-5', async () => {
+
+  // Daily maintenance at 4:30 AM Phoenix time, every day
+  maintenanceJob = cron.schedule('30 4 * * *', async () => {
     console.log('Running scheduled daily maintenance...');
     try {
       await runDailyMaintenance();
@@ -45,7 +46,7 @@ const startScheduler = () => {
   });
 
   console.log('Scheduler started:');
-  console.log('  - Daily maintenance: 4:30 AM Phoenix time (Mon-Fri)');
+  console.log('  - Daily maintenance: 4:30 AM Phoenix time (Every day)');
   console.log('  - Daily digest: 5:00 AM Phoenix time (Mon-Fri)');
   console.log('  - Weekly digest: Sunday 5:00 PM Phoenix time');
 };

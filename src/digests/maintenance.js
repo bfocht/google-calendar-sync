@@ -23,9 +23,9 @@ const runDailyMaintenance = async () => {
       queryOpenInboxLog()
     ]);
 
-    // Filter completed tasks to last 7 days only
+    // Filter completed tasks to last 1 day only
     const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 7);
+    cutoffDate.setDate(cutoffDate.getDate() - 1);
     const recentCompleted = completedTasks.filter(task => {
       const completedDate = new Date(task.completed);
       return completedDate >= cutoffDate;
