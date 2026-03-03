@@ -210,7 +210,6 @@ const reclassifyMessage = async (text, newCategory, currentStatus) => {
 const DAILY_DIGEST_STRUCTURED_PROMPT = `You are a personal productivity assistant. Generate a structured daily digest based on the following data.
 
 {{CONTEXT}}
-
 {{EXISTING_TASKS}}
 
 {{COMPLETED_TASKS}}
@@ -219,29 +218,29 @@ TODAY'S DATE: {{DATE}}
 
 OUTPUT FORMAT (return ONLY this JSON, no other text):
 {
-  "topActions": [
-    { "title": "Most important action", "notes": "Brief context or source", "priority": 1 },
-    { "title": "Second priority action", "notes": "Brief context", "priority": 2 },
-    { "title": "Third priority action", "notes": "Brief context", "priority": 3 }
+  "newTasks": [
+    { "title": "Most important action", "notes": "Brief context or source" },
+    { "title": "Second priority action", "notes": "Brief context" },
+    { "title": "Third priority action", "notes": "Brief context" }
   ],
   "peopleToConnect": [
     { "name": "Person name", "followUp": "Brief reminder" }
   ],
-  "watchOutFor": "One thing that might be stuck, overdue, or getting neglected",
+  "watchOutFor": "Things that might be stuck, overdue, or getting neglected",
   "smallWin": "Something positive or progress made, or encouraging thought"
 }
 
 RULES:
 - Be specific and actionable, not motivational
-- topActions must have no more than 3 items with specific, executable actions
 - "Work on website" is bad. "Email Sarah to confirm deadline" is good
-- Do NOT suggest actions that duplicate or overlap with EXISTING TASKS or COMPLETED TASKS
-- Do NOT suggest actions that are WAITING or COMPLETED
+- Prioritize overdue items and concrete next actions
+- Keep notes brief (under 150 characters)
+- There can be fewer than 3 newTasks, that's fine - only include what is truly a priority.
+- Do not suggest newTasks that duplicate what is already captured in existing or completed Tasks
+- If no top actions, use empty array []
 - If nothing for peopleToConnect, use empty array []
 - If nothing to watch out for, use null
 - If no small win to note, use null
-- Prioritize overdue items and concrete next actions
-- Keep notes brief (under 100 characters)
 - Always return valid JSON with no markdown formatting`;
 
 const generateDailyDigestStructured = async (context, existingTasks = [], completedTasks = []) => {
@@ -249,7 +248,7 @@ const generateDailyDigestStructured = async (context, existingTasks = [], comple
 
   // Format existing tasks for the prompt
   const existingTasksText = existingTasks.length > 0
-    ? 'OPEN TASKS (do not duplicate):\n' + existingTasks.map(t => ` - ${t.title}`).join('\n')
+    ? 'EXISTING TASKS (already captured, use as reference do not duplicate as newTasks):\n' + existingTasks.map(t => ` - ${t.title}`).join('\n')
     : '';
 
   // Format completed tasks for the prompt
@@ -279,7 +278,7 @@ const generateDailyDigestStructured = async (context, existingTasks = [], comple
   } catch (e) {
     console.error('Failed to parse structured digest:', e.message);
     return {
-      topActions: [],
+      newTasks: [],
       peopleToConnect: [],
       watchOutFor: null,
       smallWin: null,
@@ -291,9 +290,9 @@ const generateDailyDigestStructured = async (context, existingTasks = [], comple
 const formatDigestForSlack = (digest) => {
   let text = 'Good morning!\n\n';
 
-  if (digest.topActions && digest.topActions.length > 0) {
+  if (digest.newTasks && digest.newTasks.length > 0) {
     text += '*Top Actions Today:*\n';
-    digest.topActions.forEach((action, i) => {
+    digest.newTasks.forEach((action, i) => {
       text += `${i + 1}. ${action.title}\n`;
     });
     text += '\n';

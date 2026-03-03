@@ -119,7 +119,7 @@ const runDailyDigest = async () => {
       const expiresDate = new Date(keyExpiration);
       const now = new Date();
       const daysUntilExpiry = Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24));
-      if (daysUntilExpiry <= 3) {
+      if (daysUntilExpiry <= 5) {
         keyExpirationAlert = {
           name: 'Renew OpenAI LLM API key',
           dueDate: keyExpiration.split('T')[0],
@@ -154,8 +154,8 @@ const runDailyDigest = async () => {
 
     // Create Google Tasks for Top 3 Actions
     try {
-      if (digest.topActions && digest.topActions.length > 0) {
-        await createDailyTasks(digest.topActions);
+      if (digest.newTasks && digest.newTasks.length > 0) {
+        await createDailyTasks(digest.newTasks);
       } else {
         console.log('No actions to create tasks for');
       }

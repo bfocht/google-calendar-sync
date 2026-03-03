@@ -140,9 +140,15 @@ const createAdminEntry = async ({ name, notes, status, dueDate }) => {
   if (notes) {
     properties['Notes'] = { rich_text: [{ text: { content: notes } }] };
   }
-  if (dueDate) {
-    properties['Due Date'] = { date: { start: dueDate } };
-  }
+  const effectiveDueDate = dueDate || (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    const day = d.getDay();
+    if (day === 6) d.setDate(d.getDate() + 2);
+    else if (day === 0) d.setDate(d.getDate() + 1);
+    return d.toLocaleString('sv-SE', { timeZone: 'America/Phoenix' }).split(' ')[0];
+  })();
+  properties['Due Date'] = { date: { start: effectiveDueDate } };
 
   return notion.pages.create({
     parent: { database_id: admin },
