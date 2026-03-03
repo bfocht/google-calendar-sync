@@ -18,20 +18,17 @@ const runDailyMaintenance = async () => {
 
   try {
     // Fetch completed tasks and open inbox items in parallel
-    const [completedTasks, openInbox] = await Promise.all([
-      listCompletedTasks(),
+    const [recentCompleted, openInbox] = await Promise.all([
+      listCompletedTasks(2),
       queryOpenInboxLog()
     ]);
 
-    // Filter completed tasks to last 1 day only
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 1);
-    const recentCompleted = completedTasks.filter(task => {
-      const completedDate = new Date(task.completed);
-      return completedDate >= cutoffDate;
-    });
-
     console.log(`Found ${recentCompleted.length} recently completed tasks, ${openInbox.results.length} open inbox items`);
+
+    if (recentCompleted.length === 0 || openInbox.results.length === 0) {
+      console.log('Daily maintenance complete — no items to process');
+      return { closed: 0 };
+    }
 
     // Match completed tasks to open inbox items using Claude
     const { matches } = await matchCompletedTasksToInbox(recentCompleted, openInbox.results);

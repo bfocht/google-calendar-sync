@@ -235,7 +235,7 @@ RULES:
 - Be specific and actionable, not motivational
 - topActions must have no more than 3 items with specific, executable actions
 - "Work on website" is bad. "Email Sarah to confirm deadline" is good
-- Do NOT suggest actions that duplicate or overlap with EXISTING TASKS
+- Do NOT suggest actions that duplicate or overlap with EXISTING TASKS or COMPLETED TASKS
 - Do NOT suggest actions that are WAITING or COMPLETED
 - If nothing for peopleToConnect, use empty array []
 - If nothing to watch out for, use null
@@ -249,12 +249,12 @@ const generateDailyDigestStructured = async (context, existingTasks = [], comple
 
   // Format existing tasks for the prompt
   const existingTasksText = existingTasks.length > 0
-    ? 'EXISTING TASKS (do not duplicate):\n' + existingTasks.map(t => ` - ${t.title}`).join('\n')
+    ? 'OPEN TASKS (do not duplicate):\n' + existingTasks.map(t => ` - ${t.title}`).join('\n')
     : '';
 
   // Format completed tasks for the prompt
   const completedTasksText = completedTasks.length > 0
-    ? 'RECENTLY COMPLETED TASKS (do not reopen as new tasks):\n' + completedTasks.map(t => ` - ${t.title}`).join('\n')
+    ? 'COMPLETED TASKS IN THE LAST 3 DAYS (do not reopen as new actions):\n' + completedTasks.map(t => ` - ${t.title}`).join('\n')
     : '';
 
   const prompt = DAILY_DIGEST_STRUCTURED_PROMPT
@@ -364,7 +364,8 @@ RULES:
 - Note if capture volume was unusually high or low
 - Suggest concrete next actions, not vague intentions
 - If something looks stuck, say so directly
-- Keep language concise and actionable`;
+- Keep language concise and actionable
+- Use emojis sparingly for emphasis, not decoration`;
 
 const generateWeeklyDigest = async (context, totalCaptures, completedTasks = []) => {
   const completedTasksText = completedTasks.length > 0

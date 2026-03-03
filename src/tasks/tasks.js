@@ -27,16 +27,25 @@ const listTasks = async () => {
 };
 
 // List completed tasks from default task list
-const listCompletedTasks = async () => {
+// Optional `days` parameter filters to tasks completed within the last N days (server-side)
+const listCompletedTasks = async (days) => {
   const auth = await authorize();
   const tasks = google.tasks({ version: 'v1', auth });
 
+  const params = {
+    tasklist: '@default',
+    showCompleted: true,
+    showHidden: true
+  };
+
+  if (days) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    params.completedMin = cutoff.toISOString();
+  }
+
   return new Promise((resolve, reject) => {
-    tasks.tasks.list({
-      tasklist: '@default',
-      showCompleted: true,
-      showHidden: true
-    }, (err, result) => {
+    tasks.tasks.list(params, (err, result) => {
       if (err) {
         reject(err);
       } else {

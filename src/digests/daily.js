@@ -107,7 +107,7 @@ const runDailyDigest = async () => {
       queryOverdueAdmin(),
       queryUpcomingAdmin(),
       listTasks(),
-      listCompletedTasks(),
+      listCompletedTasks(3),
       checkKeyExpiration()
     ]);
 
