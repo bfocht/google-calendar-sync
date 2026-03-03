@@ -146,7 +146,9 @@ src/
 ├── claude/
 │   └── categorize.js     # AI categorization + digest generation prompts
 ├── calendar/
-│   └── events.js         # Google Calendar event creation
+│   ├── events.js         # Google Calendar event creation
+│   ├── sync.js           # Calendar sync from Outlook/shared calendars
+│   └── timeUtility.js    # Timezone conversion utilities
 ├── tasks/
 │   └── tasks.js          # Google Tasks CRUD + cleanup
 └── digests/
@@ -215,18 +217,15 @@ The digest system integrates with Google Tasks to provide better context:
 - Due Date (date)
 - Created (date)
 
-## Calendar Sync (Original Feature)
+## Calendar Sync
 
-Copy events from an Outlook or Google shared calendar to your primary Google Calendar.
+Copy events from an Outlook or Google shared calendar to your primary Google Calendar. Managed by the scheduler with the following schedule:
+
+- **Weekdays 7am-3pm** (hourly): sync 1 day ahead
+- **Mon-Thu 4pm**: sync 2 days ahead
+- **Friday 4pm**: sync 4 days ahead (covers the weekend)
 
 ```bash
-# Sync next 7 days
+# Manual sync (e.g., next 7 days)
 node index.js 7
-```
-
-### Crontab
-
-Schedule calendar sync to run daily at 5am:
-```
-0 5 * * * cd /path/to/secondBrain && node index.js 1
 ```

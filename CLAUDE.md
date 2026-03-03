@@ -37,44 +37,52 @@ On first run, the application will prompt for authorization:
 # Install dependencies
 npm install
 
-# Run the calendar sync
-node index.js
-# or
-npm start
+# Run Second Brain (scheduler + Slack bot)
+npm run brain
 
-# Schedule via cron (runs daily at 5am)
-0 5 * * * cd /path/to/project && node index.js
+# Run calendar sync manually
+node index.js <syncDays>
+
+# Run digests manually
+npm run daily
+npm run weekly
 ```
 
 ## Architecture
 
 ### Core Components
 
-**index.js** - Main application file that:
-- Handles Google OAuth authentication
+**src/calendar/sync.js** - Calendar sync module that:
 - Fetches events from shared Google calendars
 - Downloads and parses ICS calendar files from Outlook
 - Deduplicates events based on title and start time
 - Inserts new events into primary calendar with color coding (COLOR_ID = 8)
 - Marks canceled events by prefixing with "Canceled: "
 - Implements rate limiting (1500ms between API calls)
+- Managed by the scheduler with three cron schedules:
+  - Weekdays 7am-3pm hourly (1 day ahead)
+  - Mon-Thu 4pm (2 days ahead)
+  - Friday 4pm (4 days ahead, covers weekend)
 
-**timeUtility.js** - Timezone conversion utilities:
+**src/calendar/timeUtility.js** - Timezone conversion utilities:
 - Converts Windows timezone names to IANA format
 - Handles "floating" timezone events (MST offset)
 - Defaults to America/Phoenix timezone
 
+**index.js** (root) - Thin wrapper for `node index.js <syncDays>` CLI usage
+
 ### Event Processing Flow
-1. Authenticate with Google OAuth
-2. Set date range (5am today to syncDays ahead)
-3. Fetch events from shared Google calendar (if configured)
-4. Download ICS file from Outlook URL
-5. Parse ICS events and occurrences
-6. Filter events to date range
-7. Deduplicate by summary and start time
-8. Check existing primary calendar events
-9. Cancel events no longer in source
-10. Insert new events with rate limiting
+1. Scheduler triggers `runCalendarSync(syncDays)` (or manual CLI run)
+2. Authenticate with Google OAuth (reuses `authorize()` from `src/calendar/events.js`)
+3. Set date range (5am today to syncDays ahead)
+4. Fetch events from shared Google calendar (if configured)
+5. Download ICS file from Outlook URL
+6. Parse ICS events and occurrences
+7. Filter events to date range
+8. Deduplicate by summary and start time
+9. Check existing primary calendar events
+10. Cancel events no longer in source
+11. Insert new events with rate limiting
 
 - **capture.json**: Main workflow that reads Slack messages, uses Claude AI to categorize them (people/projects/ideas/admin), and files them into appropriate Notion databases
 - **daily digest.json**: Daily summary workflow

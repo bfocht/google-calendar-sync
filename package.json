@@ -4,7 +4,6 @@
   "description": "Second Brain: Calendar sync + AI-powered capture system",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
     "brain": "node src/index.js",
     "daily": "node src/digests/daily.js",
     "weekly": "node src/digests/weekly.js",
